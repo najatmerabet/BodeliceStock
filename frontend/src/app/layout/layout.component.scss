@@ -3,23 +3,22 @@
 .main {
   flex: 1; display: flex; flex-direction: column;
   margin-left: var(--sidebar-width); min-height: 100vh;
-  transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1);
+  transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 .sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 
-.content {
-  flex: 1; padding-top: var(--header-height); overflow-y: auto;
-}
+.content { flex: 1; padding-top: var(--header-height); }
 
 .footer {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 36px; border-top: 1px solid #F3F4F6;
-  background: #fff; font-size: 0.78rem; color: #9CA3AF;
+  padding: 14px 32px;
+  border-top: 1px solid var(--border-light);
+  background: #fff; font-size: 0.75rem; color: #94A3B8;
 }
 .footer-l { display: flex; align-items: center; gap: 6px; }
-.footer-brand { font-weight: 800; color: #2E7D32; }
-.footer-dot { color: #E5E7EB; }
-.footer-r { font-size: 0.72rem; }
+.footer-brand { font-weight: 800; color: #2E7D32; font-size: 0.8rem; }
+.footer-dot { color: #E2E8F0; }
+.footer-r { font-size: 0.7rem; letter-spacing: 0.2px; }
 
 @media (max-width: 768px) {
   .main { margin-left: 0 !important; }
