@@ -1,0 +1,39 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+import produitsRouter from './routes/produits';
+import clientsRouter from './routes/clients';
+import blRouter from './routes/bons-livraison';
+import facturesRouter from './routes/factures';
+import { errorHandler } from './middleware/errorHandler';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/produits', produitsRouter);
+app.use('/api/clients', clientsRouter);
+app.use('/api/bons-livraison', blRouter);
+app.use('/api/factures', facturesRouter);
+
+// Health check
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', message: '🏭 ProdMeat Stock API is running' });
+});
+
+// Error handler — TOUJOURS en dernier
+app.use(errorHandler);
+
+// Start
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
+});
+
+export default app;
