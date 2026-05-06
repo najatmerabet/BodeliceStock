@@ -1,0 +1,37 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Vue d'ensemble de votre activité — Bôdélice</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat" *ngFor="let s of stats">
+      <div class="stat-icon" [style.background]="s.bg" [style.color]="s.color">
+        <span class="material-symbols-rounded">{{ s.icon }}</span>
+      </div>
+      <div class="stat-body">
+        <span class="stat-val">{{ s.value }}</span>
+        <span class="stat-lbl">{{ s.label }}</span>
+      </div>
+      <span class="stat-trend" [style.color]="s.color">{{ s.trend }}</span>
+    </div>
+  </div>
+
+  <!-- Welcome -->
+  <div class="welcome card card-elevated">
+    <div class="welcome-badge">🏭</div>
+    <h2>Bienvenue sur ProdMeat Stock</h2>
+    <p>Gérez vos produits, clients, bons de livraison et factures depuis cette interface.</p>
+    <div class="welcome-actions">
+      <a routerLink="/produits" class="btn btn-primary">
+        <span class="material-symbols-rounded">inventory_2</span>
+        Voir les Produits
+      </a>
+      <a routerLink="/clients" class="btn btn-outline">
+        <span class="material-symbols-rounded">groups</span>
+        Voir les Clients
+      </a>
+    </div>
+  </div>
+</div>

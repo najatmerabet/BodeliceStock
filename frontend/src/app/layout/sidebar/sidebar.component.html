@@ -1,0 +1,39 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-icon">
+      <img *ngIf="!collapsed" src="assets/logo.png" alt="Bôdélice" class="brand-img" />
+      <span *ngIf="collapsed" class="brand-letter">B</span>
+    </div>
+    <div *ngIf="!collapsed" class="brand-info">
+      <span class="brand-name">Bôdélice</span>
+      <span class="brand-tagline">ProdMeat Stock</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <span *ngIf="!collapsed" class="nav-label">NAVIGATION</span>
+    <a *ngFor="let item of menuItems"
+       [routerLink]="item.route"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: item.route === '/dashboard'}"
+       class="nav-item"
+       [title]="collapsed ? item.label : ''">
+      <span class="material-symbols-rounded nav-icon">{{ item.icon }}</span>
+      <span *ngIf="!collapsed" class="nav-text">{{ item.label }}</span>
+      <span *ngIf="item.badge && !collapsed" class="nav-badge">{{ item.badge }}</span>
+    </a>
+  </nav>
+
+  <!-- Collapse -->
+  <div class="bottom">
+    <div class="divider"></div>
+    <button class="collapse-btn" (click)="toggleCollapse.emit()">
+      <span class="material-symbols-rounded">{{ collapsed ? 'chevron_right' : 'chevron_left' }}</span>
+      <span *ngIf="!collapsed">Réduire</span>
+    </button>
+  </div>
+</aside>

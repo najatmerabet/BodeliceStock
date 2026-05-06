@@ -1,0 +1,17 @@
+<div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed">
+  <app-sidebar [collapsed]="sidebarCollapsed" (toggleCollapse)="sidebarCollapsed = !sidebarCollapsed"></app-sidebar>
+  <div class="main">
+    <app-header [sidebarCollapsed]="sidebarCollapsed" (toggleSidebar)="sidebarCollapsed = !sidebarCollapsed"></app-header>
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+    <footer class="footer">
+      <div class="footer-l">
+        <span class="footer-brand">Bôdélice</span>
+        <span class="footer-dot">·</span>
+        <span>Goût, qualité, tradition</span>
+      </div>
+      <span class="footer-r">© 2026 ProdMeat Stock v1.0</span>
+    </footer>
+  </div>
+</div>
