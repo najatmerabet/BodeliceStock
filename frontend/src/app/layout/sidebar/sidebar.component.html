@@ -1,14 +1,8 @@
 <aside class="sidebar" [class.collapsed]="collapsed">
   <!-- Brand -->
   <div class="brand">
-    <div class="brand-icon">
-      <img *ngIf="!collapsed" src="assets/logo.png" alt="Bôdélice" class="brand-img" />
-      <span *ngIf="collapsed" class="brand-letter">B</span>
-    </div>
-    <div *ngIf="!collapsed" class="brand-info">
-      <span class="brand-name">Bôdélice</span>
-      <span class="brand-tagline">ProdMeat Stock</span>
-    </div>
+    <img *ngIf="!collapsed" src="assets/logo.png" alt="Bôdélice" class="brand-img" />
+    <span *ngIf="collapsed" class="brand-letter">B</span>
   </div>
 
   <div class="divider"></div>
