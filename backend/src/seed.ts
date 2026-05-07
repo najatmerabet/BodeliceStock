@@ -27,11 +27,24 @@ async function main() {
   ];
 
   for (const p of produits) {
-    await prisma.produit.upsert({
-      where: { reference: p.reference },
-      update: p,
-      create: p,
-    });
+await prisma.produit.upsert({
+  where: { reference: p.reference },
+  update: {
+    nom: p.nom,
+    unite: p.unite,
+    poidsUnitaire: p.poidsUnitaire,
+    quantite: p.quantite,
+    prixUnitaire: p.prixUnitaire,
+  },
+  create: {
+    reference: p.reference,
+    nom: p.nom,
+    unite: p.unite,
+    poidsUnitaire: p.poidsUnitaire,
+    quantite: p.quantite,
+    prixUnitaire: p.prixUnitaire,
+  },
+});
   }
   console.log(`✅ ${produits.length} produits créés`);
 

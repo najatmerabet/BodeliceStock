@@ -38,13 +38,13 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/clients — Créer un client
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, telephone, adresse } = req.body;
+    const { nom, telephone, adresse, email, ville, codepostal } = req.body;
     if (!nom) {
       res.status(400).json({ error: 'nom est obligatoire' });
       return;
     }
     const client = await prisma.client.create({
-      data: { nom, telephone, adresse },
+      data: { nom, telephone, adresse, email, ville, codepostal },
     });
     res.status(201).json(client);
   } catch (error) {
@@ -55,10 +55,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 // PUT /api/clients/:id — Modifier un client
 router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, telephone, adresse } = req.body;
+    const { nom, telephone, adresse, email, ville, codepostal } = req.body;
     const client = await prisma.client.update({
       where: { id: parseInt(String(req.params.id)) },
-      data: { nom, telephone, adresse },
+      data: { nom, telephone, adresse, email, ville, codepostal },
     });
     res.json(client);
   } catch (error: any) {
