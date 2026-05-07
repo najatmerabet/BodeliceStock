@@ -1,24 +1,16 @@
 <div class="page-container">
+  <!-- Header -->
   <div class="page-header">
     <div class="title-group">
       <h1 class="page-title">Produits</h1>
-      <p class="page-subtitle">Gérez votre inventaire de shawarma et viandes</p>
+      <p class="page-subtitle">{{ filteredProduits.length }} produits trouvés</p>
     </div>
-    
     <div class="header-actions">
-      <input 
-        type="file" 
-        id="excelUpload" 
-        (change)="onFileSelected($event)" 
-        accept=".xlsx, .xls" 
-        style="display: none"
-      />
-      
+      <input type="file" id="excelUpload" (change)="onFileSelected($event)" accept=".xlsx,.xls" style="display:none" />
       <button class="btn btn-outline" (click)="triggerFileInput()" [disabled]="loading">
         <span class="material-symbols-rounded">upload_file</span>
         Importer Excel
       </button>
-      
       <button class="btn btn-primary">
         <span class="material-symbols-rounded">add</span>
         Nouveau Produit
@@ -26,62 +18,89 @@
     </div>
   </div>
 
-  <div *ngIf="message" class="alert" [class.alert-success]="!message.includes('Erreur')">
+  <!-- Toast -->
+  <div *ngIf="message" class="toast" [class.toast-success]="messageType === 'success'" [class.toast-error]="messageType === 'error'">
+    <span class="material-symbols-rounded toast-icon">{{ messageType === 'success' ? 'check_circle' : 'error' }}</span>
     {{ message }}
   </div>
 
-  <div class="card table-card">
-    <div class="table-container">
-      <table class="modern-table">
+  <!-- Table Card -->
+  <div class="table-wrapper">
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <div class="search-box">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          placeholder="Rechercher un produit..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="applyFilter()"
+        />
+        <span *ngIf="searchQuery" class="material-symbols-rounded clear-icon" (click)="searchQuery=''; applyFilter()">close</span>
+      </div>
+      <button class="btn btn-outline btn-sm" (click)="loadProduits()">
+        <span class="material-symbols-rounded">refresh</span>
+        Actualiser
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-scroll">
+      <table>
         <thead>
           <tr>
+            <th class="th-num">#</th>
             <th>Nom du Produit</th>
-            <th>Prix Unitaire</th>
-            <th>Stock Actuel</th>
-            <th>Statut</th>
-            <th class="actions-col">Actions</th>
+            <th class="th-right">Prix (DH)</th>
+            <th class="th-right">Stock (kg)</th>
+            <th class="th-center">Statut</th>
+            <th class="th-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of produits">
+          <tr *ngFor="let p of filteredProduits; let i = index" class="row-hover">
+            <td class="td-num">{{ i + 1 }}</td>
             <td>
-              <div class="product-info">
+              <div class="product-cell">
+                <div class="product-avatar">{{ p.nom.charAt(0) }}</div>
                 <span class="product-name">{{ p.nom }}</span>
               </div>
             </td>
-            <td>{{ p.prix | number:'1.2-2' }} DH</td>
-            <td>
-              <span class="stock-badge" [class.low-stock]="p.stock < 10">
-                {{ p.stock }} kg
+            <td class="td-right td-mono">{{ p.prix | number:'1.2-2' }}</td>
+            <td class="td-right">
+              <span class="stock-pill" [ngClass]="'stock-' + getStockStatus(p.stock)">
+                {{ p.stock | number:'1.0-0' }}
               </span>
             </td>
-            <td>
-              <span class="status-indicator" [class.active]="p.stock > 0" [class.inactive]="p.stock <= 0">
-                {{ p.stock > 0 ? 'En stock' : 'Rupture' }}
+            <td class="td-center">
+              <span class="status-dot" [ngClass]="'dot-' + getStockStatus(p.stock)"></span>
+              <span class="status-text" [ngClass]="'text-' + getStockStatus(p.stock)">
+                {{ getStockStatus(p.stock) === 'ok' ? 'En stock' : getStockStatus(p.stock) === 'low' ? 'Stock bas' : 'Rupture' }}
               </span>
             </td>
-            <td class="actions-col">
-              <button class="icon-action-btn" title="Modifier">
-                <span class="material-symbols-rounded">edit</span>
-              </button>
-              <button class="icon-action-btn delete" title="Supprimer">
-                <span class="material-symbols-rounded">delete</span>
-              </button>
-            </td>
-          </tr>
-          
-          <tr *ngIf="produits.length === 0 && !loading">
-            <td colspan="5" class="empty-state">
-              <span class="material-symbols-rounded">inventory_2</span>
-              <p>Aucun produit trouvé. Importez un fichier Excel pour commencer.</p>
+            <td class="td-center">
+              <div class="action-group">
+                <button class="action-btn" title="Modifier">
+                  <span class="material-symbols-rounded">edit</span>
+                </button>
+                <button class="action-btn action-delete" title="Supprimer">
+                  <span class="material-symbols-rounded">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Empty -->
+      <div *ngIf="filteredProduits.length === 0 && !loading" class="empty">
+        <span class="material-symbols-rounded empty-icon">inventory_2</span>
+        <p class="empty-title">Aucun produit trouvé</p>
+        <p class="empty-sub">{{ searchQuery ? 'Essayez un autre terme de recherche' : 'Importez un fichier Excel pour commencer' }}</p>
+      </div>
     </div>
-    
-    <div *ngIf="loading" class="loading-overlay">
-      <div class="spinner"></div>
-    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-bar"></div>
   </div>
 </div>

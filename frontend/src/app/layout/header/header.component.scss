@@ -2,9 +2,9 @@
   position: fixed; top: 0; right: 0;
   left: var(--sidebar-width);
   height: var(--header-height);
-  background: rgba(248,250,251,0.8);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 28px; z-index: 90;
   transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
@@ -16,40 +16,40 @@
 .icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; border: none; background: transparent;
-  border-radius: 8px; color: #94A3B8; cursor: pointer;
+  border-radius: 8px; color: var(--text-muted); cursor: pointer;
   position: relative; transition: all 0.15s ease;
-  &:hover { background: #E3F2FD; color: #1565C0; }
+  &:hover { background: var(--primary-50); color: var(--primary); }
   .material-symbols-rounded { font-size: 22px; }
 }
 
 .search {
   display: flex; align-items: center; gap: 8px;
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 10px; padding: 8px 16px; min-width: 300px;
+  background: var(--bg-app); border: 1px solid var(--border);
+  border-radius: var(--radius-xs); padding: 8px 16px; min-width: 280px;
   transition: all 0.2s ease;
-  &:focus-within { border-color: #42A5F5; box-shadow: 0 0 0 3px rgba(66,165,245,0.08); }
+  &:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,58,95,0.08); background: #fff; }
 }
-.search-icon { font-size: 18px; color: #CBD5E1; }
+.search-icon { font-size: 18px; color: var(--text-muted); }
 .search input {
   border: none; outline: none; background: transparent;
   font-family: inherit; font-size: 0.84rem; color: var(--text-primary); width: 100%;
-  &::placeholder { color: #CBD5E1; }
+  &::placeholder { color: var(--text-muted); }
 }
 
 .notif-dot {
   position: absolute; top: 7px; right: 8px;
   width: 7px; height: 7px; border-radius: 50%;
-  background: #EF5350; border: 2px solid #F8FAFB;
+  background: #EF4444; border: 2px solid #fff;
 }
 
 .avatar {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, #1565C0, #0B1929);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 700; font-size: 0.75rem;
   cursor: pointer; transition: all 0.15s ease;
   letter-spacing: 0.5px;
-  &:hover { transform: scale(1.08); box-shadow: 0 3px 12px rgba(21,101,192,0.25); }
+  &:hover { transform: scale(1.08); box-shadow: 0 3px 12px rgba(30,58,95,0.25); }
 }
 
 @media (max-width: 768px) {

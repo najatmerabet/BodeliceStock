@@ -1,19 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ProduitService } from '../../services/produit.service';
 import { Produit } from '../../models/produit.model';
 
 @Component({
   selector: 'app-produits',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './produits.component.html',
   styleUrl: './produits.component.scss'
 })
 export class ProduitsComponent implements OnInit {
   produits: Produit[] = [];
+  filteredProduits: Produit[] = [];
+  searchQuery = '';
   loading = false;
   message = '';
+  messageType: 'success' | 'error' = 'success';
 
   constructor(private produitService: ProduitService) {}
 
@@ -25,19 +29,31 @@ export class ProduitsComponent implements OnInit {
     this.loading = true;
     this.produitService.getProduits().subscribe({
       next: (data) => {
-        console.log('Produits reçus:', data);
         this.produits = data.map(p => ({
           ...p,
           prix: Number(p.prix),
           stock: Number(p.stock)
         }));
+        this.applyFilter();
         this.loading = false;
       },
       error: (err) => {
         console.error(err);
         this.loading = false;
+        this.showMessage('Erreur de connexion au serveur', 'error');
       }
     });
+  }
+
+  applyFilter(): void {
+    const q = this.searchQuery.toLowerCase().trim();
+    if (!q) {
+      this.filteredProduits = [...this.produits];
+    } else {
+      this.filteredProduits = this.produits.filter(p =>
+        p.nom.toLowerCase().includes(q)
+      );
+    }
   }
 
   onFileSelected(event: any): void {
@@ -46,18 +62,14 @@ export class ProduitsComponent implements OnInit {
       this.loading = true;
       this.produitService.importExcel(file).subscribe({
         next: (res) => {
-          this.message = res.message;
+          this.showMessage(`✅ ${res.message}`, 'success');
           this.loadProduits();
-          this.loading = false;
-          // Reset input
           event.target.value = '';
-          setTimeout(() => this.message = '', 3000);
         },
-        error: (err) => {
-          console.error(err);
-          this.message = "Erreur lors de l'import";
+        error: () => {
+          this.showMessage("Erreur lors de l'import", 'error');
           this.loading = false;
-          setTimeout(() => this.message = '', 3000);
+          event.target.value = '';
         }
       });
     }
@@ -65,5 +77,17 @@ export class ProduitsComponent implements OnInit {
 
   triggerFileInput(): void {
     document.getElementById('excelUpload')?.click();
+  }
+
+  getStockStatus(stock: number): string {
+    if (stock <= 0) return 'rupture';
+    if (stock < 20) return 'low';
+    return 'ok';
+  }
+
+  private showMessage(msg: string, type: 'success' | 'error'): void {
+    this.message = msg;
+    this.messageType = type;
+    setTimeout(() => this.message = '', 4000);
   }
 }
