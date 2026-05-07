@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import morgan from 'morgan';
 
 import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
@@ -14,6 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 

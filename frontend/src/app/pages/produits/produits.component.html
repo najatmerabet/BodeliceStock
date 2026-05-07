@@ -1,0 +1,87 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-group">
+      <h1 class="page-title">Produits</h1>
+      <p class="page-subtitle">Gérez votre inventaire de shawarma et viandes</p>
+    </div>
+    
+    <div class="header-actions">
+      <input 
+        type="file" 
+        id="excelUpload" 
+        (change)="onFileSelected($event)" 
+        accept=".xlsx, .xls" 
+        style="display: none"
+      />
+      
+      <button class="btn btn-outline" (click)="triggerFileInput()" [disabled]="loading">
+        <span class="material-symbols-rounded">upload_file</span>
+        Importer Excel
+      </button>
+      
+      <button class="btn btn-primary">
+        <span class="material-symbols-rounded">add</span>
+        Nouveau Produit
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="message" class="alert" [class.alert-success]="!message.includes('Erreur')">
+    {{ message }}
+  </div>
+
+  <div class="card table-card">
+    <div class="table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Nom du Produit</th>
+            <th>Prix Unitaire</th>
+            <th>Stock Actuel</th>
+            <th>Statut</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of produits">
+            <td>
+              <div class="product-info">
+                <span class="product-name">{{ p.nom }}</span>
+              </div>
+            </td>
+            <td>{{ p.prix | number:'1.2-2' }} DH</td>
+            <td>
+              <span class="stock-badge" [class.low-stock]="p.stock < 10">
+                {{ p.stock }} kg
+              </span>
+            </td>
+            <td>
+              <span class="status-indicator" [class.active]="p.stock > 0" [class.inactive]="p.stock <= 0">
+                {{ p.stock > 0 ? 'En stock' : 'Rupture' }}
+              </span>
+            </td>
+            <td class="actions-col">
+              <button class="icon-action-btn" title="Modifier">
+                <span class="material-symbols-rounded">edit</span>
+              </button>
+              <button class="icon-action-btn delete" title="Supprimer">
+                <span class="material-symbols-rounded">delete</span>
+              </button>
+            </td>
+          </tr>
+          
+          <tr *ngIf="produits.length === 0 && !loading">
+            <td colspan="5" class="empty-state">
+              <span class="material-symbols-rounded">inventory_2</span>
+              <p>Aucun produit trouvé. Importez un fichier Excel pour commencer.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div *ngIf="loading" class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>

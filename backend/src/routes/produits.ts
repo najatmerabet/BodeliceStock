@@ -1,7 +1,48 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
+import multer from 'multer';
+import * as xlsx from 'xlsx';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// POST /api/produits/import — Importer depuis Excel
+router.post('/import', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'Aucun fichier uploadé' });
+      return;
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(sheet);
+
+    const results = [];
+    for (const row of data as any[]) {
+      if (row.nom && row.prix !== undefined) {
+        const produit = await prisma.produit.upsert({
+          where: { nom: String(row.nom) },
+          update: {
+            prix: parseFloat(String(row.prix)),
+            stock: parseFloat(String(row.stock || 0))
+          },
+          create: {
+            nom: String(row.nom),
+            prix: parseFloat(String(row.prix)),
+            stock: parseFloat(String(row.stock || 0))
+          }
+        });
+        results.push(produit);
+      }
+    }
+
+    res.json({ message: `${results.length} produits importés/mis à jour`, count: results.length });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // GET /api/produits — Liste tous les produits
 router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
