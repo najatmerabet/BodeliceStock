@@ -42,10 +42,10 @@
             <th>Réf.</th>
             <th>Produit</th>
             <th class="c">Unité</th>
-            <th class="r">Poids/Unité</th>
-            <th class="r">Qté</th>
-            <th class="r">Total kg</th>
-            <th class="r">Prix/kg (DH)</th>
+            <th class="r">Nb Unités</th>
+            <th class="r">Kg / Unité</th>
+            <th class="r">Stock Total (kg)</th>
+            <th class="r">Prix / kg (DH)</th>
             <th class="r">Valeur (DH)</th>
             <th class="c">Actions</th>
           </tr>
@@ -60,10 +60,10 @@
               </div>
             </td>
             <td class="c"><span class="unite-tag">{{ p.unite }}</span></td>
-            <td class="r mono">{{ p.poidsUnitaire | number:'1.2-2' }} kg</td>
             <td class="r">
               <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p)">{{ p.quantite }}</span>
             </td>
+            <td class="r mono">{{ p.poidsUnitaire | number:'1.2-2' }} kg</td>
             <td class="r mono">{{ totalKg(p) | number:'1.2-2' }}</td>
             <td class="r mono">{{ p.prixUnitaire | number:'1.2-2' }}</td>
             <td class="r bold">{{ valeurTotale(p) | number:'1.2-2' }}</td>
@@ -118,24 +118,24 @@
         </div>
         <div class="fld-row">
           <div class="fld">
-            <label>Unité</label>
+            <label>Type d'unité</label>
             <select [(ngModel)]="form.unite">
               <option *ngFor="let u of unites" [value]="u">{{ u }}</option>
             </select>
           </div>
           <div class="fld">
-            <label>Poids / unité (kg)</label>
-            <input type="number" [(ngModel)]="form.poidsUnitaire" step="0.01" min="0.01" />
+            <label>Nb Unités en stock</label>
+            <input type="number" [(ngModel)]="form.quantite" min="0" placeholder="Ex: 15" />
           </div>
         </div>
         <div class="fld-row">
           <div class="fld">
-            <label>Quantité (unités)</label>
-            <input type="number" [(ngModel)]="form.quantite" min="0" />
+            <label>Kg par Unité</label>
+            <input type="number" [(ngModel)]="form.poidsUnitaire" step="0.01" min="0.01" placeholder="Ex: 15" />
           </div>
           <div class="fld">
-            <label>Prix unitaire / kg (DH)</label>
-            <input type="number" [(ngModel)]="form.prixUnitaire" step="0.5" min="0" />
+            <label>Prix / kg (DH)</label>
+            <input type="number" [(ngModel)]="form.prixUnitaire" step="0.5" min="0" placeholder="Ex: 45.00" />
           </div>
         </div>
         <div class="calc-preview" *ngIf="form.prixUnitaire && form.poidsUnitaire && form.quantite">
