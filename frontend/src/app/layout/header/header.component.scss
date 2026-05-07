@@ -18,7 +18,7 @@
   width: 38px; height: 38px; border: none; background: transparent;
   border-radius: 8px; color: #94A3B8; cursor: pointer;
   position: relative; transition: all 0.15s ease;
-  &:hover { background: #E8F5E9; color: #2E7D32; }
+  &:hover { background: #E3F2FD; color: #1565C0; }
   .material-symbols-rounded { font-size: 22px; }
 }
 
@@ -27,7 +27,7 @@
   background: #fff; border: 1px solid var(--border);
   border-radius: 10px; padding: 8px 16px; min-width: 300px;
   transition: all 0.2s ease;
-  &:focus-within { border-color: #66BB6A; box-shadow: 0 0 0 3px rgba(102,187,106,0.08); }
+  &:focus-within { border-color: #42A5F5; box-shadow: 0 0 0 3px rgba(66,165,245,0.08); }
 }
 .search-icon { font-size: 18px; color: #CBD5E1; }
 .search input {
@@ -44,12 +44,12 @@
 
 .avatar {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, #2E7D32, #0A3D0C);
+  background: linear-gradient(135deg, #1565C0, #0B1929);
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 700; font-size: 0.75rem;
   cursor: pointer; transition: all 0.15s ease;
   letter-spacing: 0.5px;
-  &:hover { transform: scale(1.08); box-shadow: 0 3px 12px rgba(27,94,32,0.25); }
+  &:hover { transform: scale(1.08); box-shadow: 0 3px 12px rgba(21,101,192,0.25); }
 }
 
 @media (max-width: 768px) {
