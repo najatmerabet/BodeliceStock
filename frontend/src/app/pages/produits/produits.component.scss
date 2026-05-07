@@ -84,7 +84,14 @@ td { padding: 13px 14px; border-bottom: 1px solid #F8FAFC; vertical-align: middl
 }
 .tag-healthy { background: #F0FDF4; color: #15803D; }
 .tag-warning { background: #FFFBEB; color: #92400E; }
-.tag-critical { background: #FEF2F2; color: #991B1B; }
+.tag-critical { background: #FEF2F2; color: #991B1B; animation: pulse 2s infinite; }
+.alert-icon { font-size: 14px; margin-right: 4px; }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(153, 27, 27, 0.4); }
+  70% { box-shadow: 0 0 0 4px rgba(153, 27, 27, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(153, 27, 27, 0); }
+}
 
 /* ── Actions ── */
 .acts { display: flex; gap: 3px; justify-content: center; }

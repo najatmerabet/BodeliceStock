@@ -88,7 +88,7 @@ export class ProduitsComponent implements OnInit {
   valeurTotale(p: Produit): number { return p.quantite * p.poidsUnitaire * p.prixUnitaire; }
 
   getStockLevel(p: Produit): string {
-    if (p.quantite <= 0) return 'critical';
+    if (p.quantite < 5) return 'critical';
     if (p.quantite < 20) return 'warning';
     return 'healthy';
   }

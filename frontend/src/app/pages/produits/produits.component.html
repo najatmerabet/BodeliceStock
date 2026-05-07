@@ -61,7 +61,10 @@
             </td>
             <td class="c"><span class="unite-tag">{{ p.unite }}</span></td>
             <td class="r">
-              <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p)">{{ p.quantite }}</span>
+              <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p)">
+                <span *ngIf="p.quantite < 5" class="material-symbols-rounded alert-icon" title="Stock faible !">warning</span>
+                {{ p.quantite }}
+              </span>
             </td>
             <td class="r mono">{{ p.poidsUnitaire | number:'1.2-2' }} kg</td>
             <td class="r mono">{{ totalKg(p) | number:'1.2-2' }}</td>
