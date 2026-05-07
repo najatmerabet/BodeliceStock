@@ -3,131 +3,151 @@
   <div class="page-header">
     <div class="title-group">
       <h1 class="page-title">Produits</h1>
-      <p class="page-subtitle">{{ filteredProduits.length }} produit{{ filteredProduits.length > 1 ? 's' : '' }} trouvé{{ filteredProduits.length > 1 ? 's' : '' }}</p>
+      <p class="page-subtitle">{{ filteredProduits.length }} produit{{ filteredProduits.length > 1 ? 's' : '' }}</p>
     </div>
     <div class="header-actions">
       <input type="file" id="excelUpload" (change)="onFileSelected($event)" accept=".xlsx,.xls" style="display:none" />
       <button class="btn btn-outline" (click)="triggerFileInput()" [disabled]="loading">
-        <span class="material-symbols-rounded">upload_file</span>
-        Importer Excel
+        <span class="material-symbols-rounded">upload_file</span> Importer
       </button>
-      <button class="btn btn-primary">
-        <span class="material-symbols-rounded">add</span>
-        Nouveau Produit
+      <button class="btn btn-primary" (click)="openAdd()">
+        <span class="material-symbols-rounded">add</span> Nouveau
       </button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div *ngIf="message" class="toast" [class.toast-success]="messageType === 'success'" [class.toast-error]="messageType === 'error'">
-    <span class="material-symbols-rounded toast-icon">{{ messageType === 'success' ? 'check_circle' : 'error' }}</span>
+  <div *ngIf="message" class="toast" [class.toast-success]="messageType==='success'" [class.toast-error]="messageType==='error'">
+    <span class="material-symbols-rounded">{{ messageType === 'success' ? 'check_circle' : 'error' }}</span>
     {{ message }}
   </div>
 
   <!-- Table Card -->
-  <div class="table-wrapper">
+  <div class="table-card">
     <!-- Toolbar -->
-    <div class="table-toolbar">
-      <div class="search-box">
-        <span class="material-symbols-rounded search-icon">search</span>
-        <input type="text" placeholder="Rechercher un produit..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
-        <span *ngIf="searchQuery" class="material-symbols-rounded clear-icon" (click)="searchQuery=''; applyFilter()">close</span>
+    <div class="toolbar">
+      <div class="search">
+        <span class="material-symbols-rounded">search</span>
+        <input type="text" placeholder="Rechercher..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+        <span *ngIf="searchQuery" class="material-symbols-rounded clr" (click)="searchQuery=''; applyFilter()">close</span>
       </div>
-      <button class="btn btn-outline btn-sm" (click)="loadProduits()">
+      <button class="btn btn-ghost" (click)="loadProduits()">
         <span class="material-symbols-rounded">refresh</span>
-        Actualiser
       </button>
     </div>
 
     <!-- Table -->
-    <div class="table-scroll">
+    <div class="tbl-wrap">
       <table>
         <thead>
           <tr>
-            <th class="th-num">#</th>
-            <th>Nom du Produit</th>
-            <th class="th-right">Prix (DH)</th>
-            <th>Stock</th>
-            <th class="th-center">Statut</th>
-            <th class="th-center">Actions</th>
+            <th>Référence</th>
+            <th>Produit</th>
+            <th class="r">Prix</th>
+            <th class="r">Stock</th>
+            <th class="c">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of pagedProduits; let i = index" class="row-hover">
-            <td class="td-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <tr *ngFor="let p of pagedProduits" class="row">
             <td>
-              <div class="product-cell">
-                <div class="product-avatar">{{ p.nom.charAt(0) }}</div>
-                <span class="product-name">{{ p.nom }}</span>
-              </div>
+              <span class="ref-badge">{{ p.reference }}</span>
             </td>
-            <td class="td-right td-mono">{{ p.prix | number:'1.2-2' }}</td>
             <td>
-              <div class="stock-cell">
-                <div class="stock-bar-bg">
-                  <div class="stock-bar-fill" [ngClass]="'fill-' + getStockStatus(p.stock)" [style.width.%]="getStockPercent(p.stock)"></div>
+              <div class="prod-cell">
+                <div class="prod-av" [ngClass]="'av-' + getStockLevel(p.stock)">{{ p.nom.charAt(0) }}</div>
+                <div class="prod-info">
+                  <span class="prod-name">{{ p.nom }}</span>
                 </div>
-                <span class="stock-val" [ngClass]="'text-' + getStockStatus(p.stock)">{{ p.stock | number:'1.0-0' }} kg</span>
               </div>
             </td>
-            <td class="td-center">
-              <span class="status-chip" [ngClass]="'chip-' + getStockStatus(p.stock)">
-                <span class="chip-dot"></span>
-                {{ getStockStatus(p.stock) === 'ok' ? 'En stock' : getStockStatus(p.stock) === 'low' ? 'Stock bas' : 'Rupture' }}
+            <td class="r">
+              <span class="prix">{{ p.prix | number:'1.2-2' }} <small>DH</small></span>
+            </td>
+            <td class="r">
+              <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p.stock)">
+                {{ p.stock | number:'1.0-0' }} kg
               </span>
             </td>
-            <td class="td-center">
-              <div class="action-group">
-                <button class="action-btn" title="Modifier">
-                  <span class="material-symbols-rounded">edit</span>
-                </button>
-                <button class="action-btn action-delete" title="Supprimer" (click)="confirmDelete(p)">
-                  <span class="material-symbols-rounded">delete</span>
-                </button>
+            <td class="c">
+              <div class="acts">
+                <button class="act edit" title="Modifier" (click)="openEdit(p)"><span class="material-symbols-rounded">edit</span></button>
+                <button class="act del" title="Supprimer" (click)="confirmDelete(p)"><span class="material-symbols-rounded">delete</span></button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Empty -->
       <div *ngIf="filteredProduits.length === 0 && !loading" class="empty">
-        <span class="material-symbols-rounded empty-icon">inventory_2</span>
-        <p class="empty-title">Aucun produit trouvé</p>
-        <p class="empty-sub">{{ searchQuery ? 'Essayez un autre terme' : 'Importez un fichier Excel pour commencer' }}</p>
+        <span class="material-symbols-rounded">inventory_2</span>
+        <p>{{ searchQuery ? 'Aucun résultat' : 'Aucun produit' }}</p>
       </div>
     </div>
 
     <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="pagination">
-      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
-      <div class="page-btns">
-        <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
-          <span class="material-symbols-rounded">chevron_left</span>
-        </button>
-        <button *ngFor="let pg of pages" class="page-btn" [class.page-active]="pg === currentPage" (click)="goToPage(pg)">{{ pg }}</button>
-        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
-          <span class="material-symbols-rounded">chevron_right</span>
-        </button>
+    <div *ngIf="totalPages > 1" class="pager">
+      <span class="pager-info">{{ (currentPage-1)*pageSize+1 }}–{{ currentPage*pageSize > filteredProduits.length ? filteredProduits.length : currentPage*pageSize }} sur {{ filteredProduits.length }}</span>
+      <div class="pager-btns">
+        <button class="pg" [disabled]="currentPage===1" (click)="goToPage(currentPage-1)"><span class="material-symbols-rounded">chevron_left</span></button>
+        <button *ngFor="let p of pages" class="pg" [class.pg-on]="p===currentPage" (click)="goToPage(p)">{{ p }}</button>
+        <button class="pg" [disabled]="currentPage===totalPages" (click)="goToPage(currentPage+1)"><span class="material-symbols-rounded">chevron_right</span></button>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div *ngIf="loading" class="loading-bar"></div>
+    <div *ngIf="loading" class="loader"></div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div *ngIf="showModal" class="overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="m-head">
+        <h3>{{ editMode ? 'Modifier' : 'Nouveau produit' }}</h3>
+        <button class="m-close" (click)="closeModal()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="m-body">
+        <div class="fld" *ngIf="!editMode">
+          <label>Référence <span class="opt">(auto si vide)</span></label>
+          <input type="text" [(ngModel)]="form.reference" placeholder="Ex: SHW-004" />
+        </div>
+        <div class="fld" *ngIf="editMode">
+          <label>Référence</label>
+          <input type="text" [value]="form.reference" disabled class="disabled" />
+        </div>
+        <div class="fld">
+          <label>Nom du produit</label>
+          <input type="text" [(ngModel)]="form.nom" placeholder="Ex: Shawarma Poulet" />
+        </div>
+        <div class="fld-row">
+          <div class="fld">
+            <label>Prix (DH)</label>
+            <input type="number" [(ngModel)]="form.prix" placeholder="0.00" step="0.5" min="0" />
+          </div>
+          <div class="fld">
+            <label>Stock (kg)</label>
+            <input type="number" [(ngModel)]="form.stock" placeholder="0" min="0" />
+          </div>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="btn btn-outline" (click)="closeModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="saveProduct()" [disabled]="saving || !form.nom">
+          <span class="material-symbols-rounded">{{ editMode ? 'save' : 'add' }}</span>
+          {{ saving ? 'Enregistrement...' : (editMode ? 'Enregistrer' : 'Ajouter') }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Delete Modal -->
-  <div *ngIf="deleteTarget" class="modal-overlay" (click)="cancelDelete()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-icon">
-        <span class="material-symbols-rounded">warning</span>
-      </div>
-      <h3>Supprimer ce produit ?</h3>
-      <p>Voulez-vous vraiment supprimer <strong>{{ deleteTarget.nom }}</strong> ? Cette action est irréversible.</p>
-      <div class="modal-actions">
+  <div *ngIf="deleteTarget" class="overlay" (click)="cancelDelete()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="del-icon"><span class="material-symbols-rounded">warning</span></div>
+      <h3>Supprimer {{ deleteTarget.reference }} ?</h3>
+      <p class="del-text"><strong>{{ deleteTarget.nom }}</strong> sera supprimé définitivement.</p>
+      <div class="m-foot m-foot-center">
         <button class="btn btn-outline" (click)="cancelDelete()">Annuler</button>
         <button class="btn btn-danger" (click)="executeDelete()" [disabled]="deleting">
-          <span class="material-symbols-rounded">delete</span>
           {{ deleting ? 'Suppression...' : 'Supprimer' }}
         </button>
       </div>

@@ -25,7 +25,13 @@ export class ProduitsComponent implements OnInit {
   pageSize = 10;
   totalPages = 1;
 
-  // Delete confirmation
+  // Modal
+  showModal = false;
+  editMode = false;
+  form: Produit = { nom: '', prix: 0, stock: 0 };
+  saving = false;
+
+  // Delete
   deleteTarget: Produit | null = null;
   deleting = false;
 
@@ -42,29 +48,21 @@ export class ProduitsComponent implements OnInit {
     this.loading = true;
     this.produitService.getProduits().subscribe({
       next: (data) => {
-        this.produits = data.map(p => ({
-          ...p,
-          prix: Number(p.prix),
-          stock: Number(p.stock)
-        }));
+        this.produits = data.map(p => ({ ...p, prix: Number(p.prix), stock: Number(p.stock) }));
         this.applyFilter();
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        console.error(err);
+      error: () => {
         this.loading = false;
         this.showMessage('Erreur de connexion au serveur', 'error');
-        this.cdr.detectChanges();
       }
     });
   }
 
   applyFilter(): void {
     const q = this.searchQuery.toLowerCase().trim();
-    this.filteredProduits = !q
-      ? [...this.produits]
-      : this.produits.filter(p => p.nom.toLowerCase().includes(q));
+    this.filteredProduits = !q ? [...this.produits] : this.produits.filter(p => p.nom.toLowerCase().includes(q));
     this.currentPage = 1;
     this.updatePage();
   }
@@ -78,27 +76,65 @@ export class ProduitsComponent implements OnInit {
   }
 
   goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-      this.updatePage();
-    }
+    if (page >= 1 && page <= this.totalPages) { this.currentPage = page; this.updatePage(); }
   }
 
   get pages(): number[] {
     const p: number[] = [];
-    for (let i = 1; i <= this.totalPages; i++) p.push(i);
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, start + 4);
+    for (let i = start; i <= end; i++) p.push(i);
     return p;
   }
 
+  // Add / Edit
+  openAdd(): void {
+    this.editMode = false;
+    this.form = { nom: '', prix: 0, stock: 0 };
+    this.showModal = true;
+  }
+
+  openEdit(p: Produit): void {
+    this.editMode = true;
+    this.form = { ...p };
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.form = { nom: '', prix: 0, stock: 0 };
+  }
+
+  saveProduct(): void {
+    if (!this.form.nom || this.form.prix === undefined) return;
+    this.saving = true;
+
+    if (this.editMode && this.form.id) {
+      this.produitService.updateProduit(this.form.id, this.form).subscribe({
+        next: () => {
+          this.showMessage(`"${this.form.nom}" mis à jour`, 'success');
+          this.closeModal();
+          this.saving = false;
+          this.loadProduits();
+        },
+        error: () => { this.saving = false; this.showMessage('Erreur lors de la modification', 'error'); }
+      });
+    } else {
+      this.produitService.addProduit(this.form).subscribe({
+        next: () => {
+          this.showMessage(`"${this.form.nom}" ajouté`, 'success');
+          this.closeModal();
+          this.saving = false;
+          this.loadProduits();
+        },
+        error: () => { this.saving = false; this.showMessage("Erreur lors de l'ajout", 'error'); }
+      });
+    }
+  }
+
   // Delete
-  confirmDelete(p: Produit): void {
-    this.deleteTarget = p;
-  }
-
-  cancelDelete(): void {
-    this.deleteTarget = null;
-  }
-
+  confirmDelete(p: Produit): void { this.deleteTarget = p; }
+  cancelDelete(): void { this.deleteTarget = null; }
   executeDelete(): void {
     if (!this.deleteTarget?.id) return;
     this.deleting = true;
@@ -109,53 +145,31 @@ export class ProduitsComponent implements OnInit {
         this.deleting = false;
         this.loadProduits();
       },
-      error: () => {
-        this.showMessage('Erreur lors de la suppression', 'error');
-        this.deleting = false;
-        this.cdr.detectChanges();
-      }
+      error: () => { this.deleting = false; this.showMessage('Erreur de suppression', 'error'); }
     });
   }
 
-  // Excel Import
+  // Excel
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];
-    if (file) {
-      this.loading = true;
-      this.produitService.importExcel(file).subscribe({
-        next: (res) => {
-          this.showMessage(`✅ ${res.message}`, 'success');
-          this.loadProduits();
-          event.target.value = '';
-        },
-        error: () => {
-          this.showMessage("Erreur lors de l'import", 'error');
-          this.loading = false;
-          event.target.value = '';
-          this.cdr.detectChanges();
-        }
-      });
-    }
+    if (!file) return;
+    this.loading = true;
+    this.produitService.importExcel(file).subscribe({
+      next: (res) => { this.showMessage(`✅ ${res.message}`, 'success'); this.loadProduits(); event.target.value = ''; },
+      error: () => { this.showMessage("Erreur lors de l'import", 'error'); this.loading = false; event.target.value = ''; }
+    });
   }
+  triggerFileInput(): void { document.getElementById('excelUpload')?.click(); }
 
-  triggerFileInput(): void {
-    document.getElementById('excelUpload')?.click();
-  }
-
-  getStockStatus(stock: number): string {
-    if (stock <= 0) return 'rupture';
-    if (stock < 20) return 'low';
-    return 'ok';
-  }
-
-  getStockPercent(stock: number): number {
-    return Math.min(100, (stock / 500) * 100);
+  getStockLevel(stock: number): string {
+    if (stock <= 0) return 'critical';
+    if (stock < 20) return 'warning';
+    if (stock < 100) return 'moderate';
+    return 'healthy';
   }
 
   private showMessage(msg: string, type: 'success' | 'error'): void {
-    this.message = msg;
-    this.messageType = type;
-    this.cdr.detectChanges();
+    this.message = msg; this.messageType = type; this.cdr.detectChanges();
     setTimeout(() => { this.message = ''; this.cdr.detectChanges(); }, 4000);
   }
 }
