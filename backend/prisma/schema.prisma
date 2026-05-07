@@ -25,6 +25,9 @@ model Client {
   nom           String
   telephone     String?
   adresse       String?
+  email         String?
+  ville         String?
+  codepostal    String?
   bonsLivraison BonLivraison[]
   factures      Facture[]
 

@@ -13,6 +13,7 @@ export class ProduitService {
 
   getProduits(): Observable<Produit[]> {
     return this.http.get<Produit[]>(this.apiUrl);
+    
   }
 
   importExcel(file: File): Observable<any> {

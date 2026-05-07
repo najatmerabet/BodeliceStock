@@ -48,6 +48,7 @@ export class ProduitsComponent implements OnInit {
           poidsUnitaire: Number(p.poidsUnitaire),
           quantite: Number(p.quantite),
         }));
+        
         this.applyFilter();
         this.loading = false;
         this.cdr.detectChanges();
