@@ -2,6 +2,8 @@ export interface Produit {
   id?: number;
   reference?: string;
   nom: string;
-  prix: number;
-  stock: number;
+  unite: string;
+  poidsUnitaire: number;
+  quantite: number;
+  prixUnitaire: number;
 }

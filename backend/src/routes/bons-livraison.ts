@@ -62,9 +62,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         res.status(400).json({ error: `Produit id=${l.produitId} non trouvé` });
         return;
       }
-      if (Number(produit.stock) < l.quantite) {
+      if (Number(produit.quantite) < l.quantite) {
         res.status(400).json({
-          error: `Stock insuffisant pour "${produit.nom}" — dispo: ${produit.stock}, demandé: ${l.quantite}`,
+          error: `Stock insuffisant pour "${produit.nom}" — dispo: ${produit.quantite} unités, demandé: ${l.quantite}`,
         });
         return;
       }

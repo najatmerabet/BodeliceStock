@@ -22,13 +22,12 @@
     {{ message }}
   </div>
 
-  <!-- Table Card -->
+  <!-- Table -->
   <div class="table-card">
-    <!-- Toolbar -->
     <div class="toolbar">
       <div class="search">
         <span class="material-symbols-rounded">search</span>
-        <input type="text" placeholder="Rechercher..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+        <input type="text" placeholder="Rechercher par nom ou référence..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
         <span *ngIf="searchQuery" class="material-symbols-rounded clr" (click)="searchQuery=''; applyFilter()">close</span>
       </div>
       <button class="btn btn-ghost" (click)="loadProduits()">
@@ -36,39 +35,38 @@
       </button>
     </div>
 
-    <!-- Table -->
     <div class="tbl-wrap">
       <table>
         <thead>
           <tr>
-            <th>Référence</th>
+            <th>Réf.</th>
             <th>Produit</th>
-            <th class="r">Prix</th>
-            <th class="r">Stock</th>
+            <th class="c">Unité</th>
+            <th class="r">Poids/Unité</th>
+            <th class="r">Qté</th>
+            <th class="r">Total kg</th>
+            <th class="r">Prix/kg (DH)</th>
+            <th class="r">Valeur (DH)</th>
             <th class="c">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let p of pagedProduits" class="row">
-            <td>
-              <span class="ref-badge">{{ p.reference }}</span>
-            </td>
+            <td><span class="ref-badge">{{ p.reference }}</span></td>
             <td>
               <div class="prod-cell">
-                <div class="prod-av" [ngClass]="'av-' + getStockLevel(p.stock)">{{ p.nom.charAt(0) }}</div>
-                <div class="prod-info">
-                  <span class="prod-name">{{ p.nom }}</span>
-                </div>
+                <div class="prod-av" [ngClass]="'av-' + getStockLevel(p)">{{ p.nom.charAt(0) }}</div>
+                <span class="prod-name">{{ p.nom }}</span>
               </div>
             </td>
+            <td class="c"><span class="unite-tag">{{ p.unite }}</span></td>
+            <td class="r mono">{{ p.poidsUnitaire | number:'1.2-2' }} kg</td>
             <td class="r">
-              <span class="prix">{{ p.prix | number:'1.2-2' }} <small>DH</small></span>
+              <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p)">{{ p.quantite }}</span>
             </td>
-            <td class="r">
-              <span class="stock-tag" [ngClass]="'tag-' + getStockLevel(p.stock)">
-                {{ p.stock | number:'1.0-0' }} kg
-              </span>
-            </td>
+            <td class="r mono">{{ totalKg(p) | number:'1.2-2' }}</td>
+            <td class="r mono">{{ p.prixUnitaire | number:'1.2-2' }}</td>
+            <td class="r bold">{{ valeurTotale(p) | number:'1.2-2' }}</td>
             <td class="c">
               <div class="acts">
                 <button class="act edit" title="Modifier" (click)="openEdit(p)"><span class="material-symbols-rounded">edit</span></button>
@@ -102,7 +100,7 @@
   <div *ngIf="showModal" class="overlay" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="m-head">
-        <h3>{{ editMode ? 'Modifier' : 'Nouveau produit' }}</h3>
+        <h3>{{ editMode ? 'Modifier le produit' : 'Nouveau produit' }}</h3>
         <button class="m-close" (click)="closeModal()"><span class="material-symbols-rounded">close</span></button>
       </div>
       <div class="m-body">
@@ -120,12 +118,34 @@
         </div>
         <div class="fld-row">
           <div class="fld">
-            <label>Prix (DH)</label>
-            <input type="number" [(ngModel)]="form.prix" placeholder="0.00" step="0.5" min="0" />
+            <label>Unité</label>
+            <select [(ngModel)]="form.unite">
+              <option *ngFor="let u of unites" [value]="u">{{ u }}</option>
+            </select>
           </div>
           <div class="fld">
-            <label>Stock (kg)</label>
-            <input type="number" [(ngModel)]="form.stock" placeholder="0" min="0" />
+            <label>Poids / unité (kg)</label>
+            <input type="number" [(ngModel)]="form.poidsUnitaire" step="0.01" min="0.01" />
+          </div>
+        </div>
+        <div class="fld-row">
+          <div class="fld">
+            <label>Quantité (unités)</label>
+            <input type="number" [(ngModel)]="form.quantite" min="0" />
+          </div>
+          <div class="fld">
+            <label>Prix unitaire / kg (DH)</label>
+            <input type="number" [(ngModel)]="form.prixUnitaire" step="0.5" min="0" />
+          </div>
+        </div>
+        <div class="calc-preview" *ngIf="form.prixUnitaire && form.poidsUnitaire && form.quantite">
+          <div class="calc-row">
+            <span>Total stock</span>
+            <strong>{{ form.quantite * form.poidsUnitaire | number:'1.2-2' }} kg</strong>
+          </div>
+          <div class="calc-row">
+            <span>Valeur totale</span>
+            <strong>{{ form.quantite * form.poidsUnitaire * form.prixUnitaire | number:'1.2-2' }} DH</strong>
           </div>
         </div>
       </div>
@@ -147,9 +167,7 @@
       <p class="del-text"><strong>{{ deleteTarget.nom }}</strong> sera supprimé définitivement.</p>
       <div class="m-foot m-foot-center">
         <button class="btn btn-outline" (click)="cancelDelete()">Annuler</button>
-        <button class="btn btn-danger" (click)="executeDelete()" [disabled]="deleting">
-          {{ deleting ? 'Suppression...' : 'Supprimer' }}
-        </button>
+        <button class="btn btn-danger" (click)="executeDelete()" [disabled]="deleting">{{ deleting ? 'Suppression...' : 'Supprimer' }}</button>
       </div>
     </div>
   </div>

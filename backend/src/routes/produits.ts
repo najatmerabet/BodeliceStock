@@ -6,7 +6,6 @@ import * as xlsx from 'xlsx';
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Génère une référence automatique (ex: PRD-001)
 async function generateReference(): Promise<string> {
   const last = await prisma.produit.findFirst({ orderBy: { id: 'desc' } });
   const num = last ? last.id + 1 : 1;
@@ -21,12 +20,24 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
     const results = [];
     for (const row of data as any[]) {
-      if (row.nom && row.prix !== undefined) {
+      if (row.nom && row.prixUnitaire !== undefined) {
         const ref = row.reference || await generateReference();
         const produit = await prisma.produit.upsert({
           where: { nom: String(row.nom) },
-          update: { prix: parseFloat(String(row.prix)), stock: parseFloat(String(row.stock || 0)) },
-          create: { reference: ref, nom: String(row.nom), prix: parseFloat(String(row.prix)), stock: parseFloat(String(row.stock || 0)) }
+          update: {
+            prixUnitaire: parseFloat(String(row.prixUnitaire)),
+            unite: String(row.unite || 'kg'),
+            poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
+            quantite: parseInt(String(row.quantite || 0)),
+          },
+          create: {
+            reference: ref,
+            nom: String(row.nom),
+            unite: String(row.unite || 'kg'),
+            poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
+            quantite: parseInt(String(row.quantite || 0)),
+            prixUnitaire: parseFloat(String(row.prixUnitaire)),
+          }
         });
         results.push(produit);
       }
@@ -55,11 +66,17 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/produits
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, prix, stock, reference } = req.body;
-    if (!nom || prix === undefined) { res.status(400).json({ error: 'nom et prix sont obligatoires' }); return; }
+    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
+    if (!nom || prixUnitaire === undefined) { res.status(400).json({ error: 'nom et prixUnitaire sont obligatoires' }); return; }
     const ref = reference || await generateReference();
     const produit = await prisma.produit.create({
-      data: { reference: ref, nom, prix, stock: stock || 0 },
+      data: {
+        reference: ref, nom,
+        unite: unite || 'kg',
+        poidsUnitaire: poidsUnitaire || 1,
+        quantite: quantite || 0,
+        prixUnitaire,
+      },
     });
     res.status(201).json(produit);
   } catch (error) { next(error); }
@@ -68,11 +85,13 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 // PUT /api/produits/:id
 router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, prix, stock, reference } = req.body;
+    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
     const data: any = {};
     if (nom !== undefined) data.nom = nom;
-    if (prix !== undefined) data.prix = prix;
-    if (stock !== undefined) data.stock = stock;
+    if (prixUnitaire !== undefined) data.prixUnitaire = prixUnitaire;
+    if (unite !== undefined) data.unite = unite;
+    if (poidsUnitaire !== undefined) data.poidsUnitaire = poidsUnitaire;
+    if (quantite !== undefined) data.quantite = quantite;
     if (reference !== undefined) data.reference = reference;
     const produit = await prisma.produit.update({
       where: { id: parseInt(String(req.params.id)) }, data
