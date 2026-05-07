@@ -38,7 +38,13 @@ th {
 td { padding: 14px 20px; border-bottom: 1px solid #F8FAFC; vertical-align: middle; }
 .r { text-align: right; }
 .c { text-align: center; }
-.row { transition: background 0.12s; &:hover { background: #FAFBFE; } &:last-child td { border-bottom: none; } }
+.row {
+  transition: background 0.12s;
+  &:nth-child(even) { background: #F8FAFC; }
+  &:nth-child(odd) { background: #fff; }
+  &:hover { background: #EFF3F8; }
+  &:last-child td { border-bottom: none; }
+}
 
 /* ── Reference Badge ── */
 .ref-badge {
