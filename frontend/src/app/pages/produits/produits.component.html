@@ -3,7 +3,7 @@
   <div class="page-header">
     <div class="title-group">
       <h1 class="page-title">Produits</h1>
-      <p class="page-subtitle">{{ filteredProduits.length }} produits trouvés</p>
+      <p class="page-subtitle">{{ filteredProduits.length }} produit{{ filteredProduits.length > 1 ? 's' : '' }} trouvé{{ filteredProduits.length > 1 ? 's' : '' }}</p>
     </div>
     <div class="header-actions">
       <input type="file" id="excelUpload" (change)="onFileSelected($event)" accept=".xlsx,.xls" style="display:none" />
@@ -30,12 +30,7 @@
     <div class="table-toolbar">
       <div class="search-box">
         <span class="material-symbols-rounded search-icon">search</span>
-        <input
-          type="text"
-          placeholder="Rechercher un produit..."
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="applyFilter()"
-        />
+        <input type="text" placeholder="Rechercher un produit..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
         <span *ngIf="searchQuery" class="material-symbols-rounded clear-icon" (click)="searchQuery=''; applyFilter()">close</span>
       </div>
       <button class="btn btn-outline btn-sm" (click)="loadProduits()">
@@ -52,14 +47,14 @@
             <th class="th-num">#</th>
             <th>Nom du Produit</th>
             <th class="th-right">Prix (DH)</th>
-            <th class="th-right">Stock (kg)</th>
+            <th>Stock</th>
             <th class="th-center">Statut</th>
             <th class="th-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of filteredProduits; let i = index" class="row-hover">
-            <td class="td-num">{{ i + 1 }}</td>
+          <tr *ngFor="let p of pagedProduits; let i = index" class="row-hover">
+            <td class="td-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
             <td>
               <div class="product-cell">
                 <div class="product-avatar">{{ p.nom.charAt(0) }}</div>
@@ -67,14 +62,17 @@
               </div>
             </td>
             <td class="td-right td-mono">{{ p.prix | number:'1.2-2' }}</td>
-            <td class="td-right">
-              <span class="stock-pill" [ngClass]="'stock-' + getStockStatus(p.stock)">
-                {{ p.stock | number:'1.0-0' }}
-              </span>
+            <td>
+              <div class="stock-cell">
+                <div class="stock-bar-bg">
+                  <div class="stock-bar-fill" [ngClass]="'fill-' + getStockStatus(p.stock)" [style.width.%]="getStockPercent(p.stock)"></div>
+                </div>
+                <span class="stock-val" [ngClass]="'text-' + getStockStatus(p.stock)">{{ p.stock | number:'1.0-0' }} kg</span>
+              </div>
             </td>
             <td class="td-center">
-              <span class="status-dot" [ngClass]="'dot-' + getStockStatus(p.stock)"></span>
-              <span class="status-text" [ngClass]="'text-' + getStockStatus(p.stock)">
+              <span class="status-chip" [ngClass]="'chip-' + getStockStatus(p.stock)">
+                <span class="chip-dot"></span>
                 {{ getStockStatus(p.stock) === 'ok' ? 'En stock' : getStockStatus(p.stock) === 'low' ? 'Stock bas' : 'Rupture' }}
               </span>
             </td>
@@ -83,7 +81,7 @@
                 <button class="action-btn" title="Modifier">
                   <span class="material-symbols-rounded">edit</span>
                 </button>
-                <button class="action-btn action-delete" title="Supprimer">
+                <button class="action-btn action-delete" title="Supprimer" (click)="confirmDelete(p)">
                   <span class="material-symbols-rounded">delete</span>
                 </button>
               </div>
@@ -96,11 +94,43 @@
       <div *ngIf="filteredProduits.length === 0 && !loading" class="empty">
         <span class="material-symbols-rounded empty-icon">inventory_2</span>
         <p class="empty-title">Aucun produit trouvé</p>
-        <p class="empty-sub">{{ searchQuery ? 'Essayez un autre terme de recherche' : 'Importez un fichier Excel pour commencer' }}</p>
+        <p class="empty-sub">{{ searchQuery ? 'Essayez un autre terme' : 'Importez un fichier Excel pour commencer' }}</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <span class="page-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+      <div class="page-btns">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          <span class="material-symbols-rounded">chevron_left</span>
+        </button>
+        <button *ngFor="let pg of pages" class="page-btn" [class.page-active]="pg === currentPage" (click)="goToPage(pg)">{{ pg }}</button>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          <span class="material-symbols-rounded">chevron_right</span>
+        </button>
       </div>
     </div>
 
     <!-- Loading -->
     <div *ngIf="loading" class="loading-bar"></div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div *ngIf="deleteTarget" class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-icon">
+        <span class="material-symbols-rounded">warning</span>
+      </div>
+      <h3>Supprimer ce produit ?</h3>
+      <p>Voulez-vous vraiment supprimer <strong>{{ deleteTarget.nom }}</strong> ? Cette action est irréversible.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" (click)="cancelDelete()">Annuler</button>
+        <button class="btn btn-danger" (click)="executeDelete()" [disabled]="deleting">
+          <span class="material-symbols-rounded">delete</span>
+          {{ deleting ? 'Suppression...' : 'Supprimer' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

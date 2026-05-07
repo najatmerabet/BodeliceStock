@@ -1,8 +1,7 @@
 <aside class="sidebar" [class.collapsed]="collapsed">
   <!-- Brand -->
   <div class="brand">
-    <img src="assets/logo.png" alt="Bôdélice" class="brand-img" />
-    <span *ngIf="!collapsed" class="brand-name">BÔDÉLICE</span>
+    <img src="assets/logo.png" alt="Bôdélice" class="brand-img" [class.brand-img-sm]="collapsed" />
   </div>
 
   <div class="divider"></div>
