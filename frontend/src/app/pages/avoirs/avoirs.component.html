@@ -1,0 +1,265 @@
+<div class="av-page">
+
+  <div *ngIf="message" class="toast" [class.toast-ok]="messageType==='success'" [class.toast-err]="messageType==='error'">
+    <span class="material-symbols-rounded">{{ messageType==='success' ? 'check_circle' : 'error' }}</span>
+    {{ message }}
+  </div>
+
+  <!-- ════ LIST ════ -->
+  <ng-container *ngIf="view === 'list'">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <div class="page-icon red"><span class="material-symbols-rounded">assignment_return</span></div>
+        <div>
+          <h1>Factures d'Avoir</h1>
+          <p>Gérez les retours produits et avoirs clients</p>
+        </div>
+      </div>
+      <button class="btn-create" (click)="openCreate()">
+        <span class="material-symbols-rounded">add</span> Nouvel Avoir
+      </button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card" style="--c:#EF4444">
+        <span class="material-symbols-rounded stat-ico">assignment_return</span>
+        <div><span class="stat-val">{{ avoirs.length }}</span><span class="stat-lbl">Total avoirs</span></div>
+      </div>
+      <div class="stat-card" style="--c:#6366F1">
+        <span class="material-symbols-rounded stat-ico">payments</span>
+        <div><span class="stat-val">{{ totalAvoirs | number:'1.2-2' }}</span><span class="stat-lbl">Montant total (DH)</span></div>
+      </div>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-toolbar filters-toolbar">
+        <div class="search-box">
+          <span class="material-symbols-rounded">search</span>
+          <input type="text" placeholder="Rechercher…" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+        </div>
+        <div class="filter-group">
+          <select [(ngModel)]="filterClient" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous les clients</option>
+            <option *ngFor="let c of getUniqueClients()" [value]="c.id">{{ c.nom }}</option>
+          </select>
+          <input type="date" [(ngModel)]="filterDateFrom" (ngModelChange)="applyFilter()" class="filter-date" title="Date début" />
+          <input type="date" [(ngModel)]="filterDateTo" (ngModelChange)="applyFilter()" class="filter-date" title="Date fin" />
+          <button *ngIf="filterClient || filterDateFrom || filterDateTo" class="clear-filters" (click)="clearFilters()" title="Effacer filtres">
+            <span class="material-symbols-rounded">filter_alt_off</span>
+          </button>
+        </div>
+        <div class="tbl-toolbar-right">
+          <span class="count-badge">{{ filteredAvoirs.length }}</span>
+          <button class="icon-btn" (click)="loadAvoirs()"><span class="material-symbols-rounded">refresh</span></button>
+        </div>
+      </div>
+      <div *ngIf="loading" class="prog-bar"><div class="prog-fill"></div></div>
+      <div class="tbl-wrap">
+        <table class="av-table">
+          <thead><tr>
+            <th>N° Avoir</th><th>Facture liée</th><th>Client</th>
+            <th class="tc">Date</th><th class="tr">Montant</th><th>Motif</th><th class="tc">Actions</th>
+          </tr></thead>
+          <tbody>
+            <tr *ngFor="let a of filteredAvoirs" class="av-row" (click)="openDetail(a)">
+              <td><span class="num-tag red">{{ a.numero }}</span></td>
+              <td><span class="num-tag">{{ a.facture?.numero }}</span></td>
+              <td><span class="cl-nom">{{ a.facture?.client?.nom || '—' }}</span></td>
+              <td class="tc date-cell">{{ a.date | date:'dd/MM/yy' }}</td>
+              <td class="tr mono-bold red-val">- {{ a.total | number:'1.2-2' }} DH</td>
+              <td class="motif-cell">{{ a.motif || '—' }}</td>
+              <td class="tc" (click)="$event.stopPropagation()">
+                <div class="row-acts">
+                  <button class="act-btn act-view" (click)="openDetail(a)"><span class="material-symbols-rounded">visibility</span></button>
+                  <button class="act-btn act-pdf" (click)="generatePDF(a)"><span class="material-symbols-rounded">picture_as_pdf</span></button>
+                  <button class="act-btn act-del" (click)="deleteAvoir(a)"><span class="material-symbols-rounded">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div *ngIf="filteredAvoirs.length === 0 && !loading" class="empty-state">
+          <div class="empty-icon"><span class="material-symbols-rounded">assignment_return</span></div>
+          <h3>Aucun avoir</h3>
+          <p>Créez un avoir pour enregistrer un retour de produits</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════ CREATE ════ -->
+  <ng-container *ngIf="view === 'create'">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()"><span class="material-symbols-rounded">arrow_back</span></button>
+        <div class="page-icon red"><span class="material-symbols-rounded">add_circle</span></div>
+        <div><h1>Nouvel Avoir</h1><p>Sélectionnez la facture et les produits retournés</p></div>
+      </div>
+    </div>
+
+    <div class="create-grid">
+      <div class="steps-col">
+        <!-- Step 1: Facture -->
+        <div class="step-card">
+          <div class="step-hdr">
+            <div class="step-num">1</div>
+            <div><h3>Facture</h3><p>Sélectionnez la facture concernée</p></div>
+          </div>
+          <select class="full-select" [(ngModel)]="form.factureId" (ngModelChange)="onFactureChange()">
+            <option [value]="0" disabled>— Choisir une facture —</option>
+            <option *ngFor="let f of factures" [value]="f.id">{{ f.numero }} · {{ f.client?.nom }} ({{ f.total | number:'1.2-2' }} DH)</option>
+          </select>
+        </div>
+
+        <!-- Step 2: Motif -->
+        <div class="step-card" *ngIf="form.factureId > 0">
+          <div class="step-hdr">
+            <div class="step-num">2</div>
+            <div><h3>Motif</h3><p>Raison du retour (optionnel)</p></div>
+          </div>
+          <input type="text" class="full-input" placeholder="Ex: Produit non conforme, retour client…" [(ngModel)]="form.motif" />
+        </div>
+
+        <!-- Step 3: Produits depuis les BLs de la facture -->
+        <div class="step-card" *ngIf="selectedFacture?.bonsLivraison?.length">
+          <div class="step-hdr">
+            <div class="step-num">3</div>
+            <div><h3>Produits à retourner</h3><p>Cliquez sur les produits livrés pour les ajouter</p></div>
+          </div>
+          <div *ngFor="let bl of selectedFacture?.bonsLivraison" class="bl-block">
+            <div class="bl-block-hdr">
+              <span class="material-symbols-rounded">local_shipping</span> {{ bl.numero }}
+            </div>
+            <div *ngFor="let l of bl.lignes" class="bl-ligne" (click)="addLigneFromBl(bl, l)">
+              <span class="ref-chip">{{ l.produit?.reference }}</span>
+              <span class="prod-name">{{ l.produit?.nom }}</span>
+              <span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} × {{ l.poidsUnitaire }}kg</span>
+              <span class="mono-sm">{{ l.quantite | number:'1.2-2' }} kg</span>
+              <span class="mono-sm">{{ l.prix | number:'1.2-2' }} DH/kg</span>
+              <span class="material-symbols-rounded add-ico">add_circle</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Lignes ajoutées -->
+        <div class="step-card" *ngIf="form.lignes.length > 0">
+          <div class="step-hdr">
+            <div class="step-num">4</div>
+            <div><h3>Lignes de l'avoir <span class="count-badge">{{ form.lignes.length }}</span></h3><p>Ajustez les quantités retournées</p></div>
+          </div>
+          <table class="av-table inner-tbl">
+            <thead><tr>
+              <th>Produit</th><th class="tc">Détails (Unités)</th><th class="tr">Qté (kg)</th><th class="tr">Prix/kg</th><th class="tr">Total</th><th></th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let l of form.lignes; let i = index" class="av-row">
+                <td><span class="ref-chip">{{ l.produitRef }}</span> {{ l.produitNom }}</td>
+                <td class="tc">
+                   <div class="qty-unit-box">
+                      <input type="number" class="qty-input sm" [(ngModel)]="l.nbUnites" [max]="l.maxNbUnites" min="0" (ngModelChange)="updateLigneTotal(l)" />
+                      <span class="unit-label">{{ l.produitUnite }}(s)</span>
+                      <small>× {{ l.poidsUnitaire }}kg</small>
+                   </div>
+                </td>
+                <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }}</td>
+                <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+                <td class="tr mono-bold red-val">{{ l.total | number:'1.2-2' }} DH</td>
+                <td class="tc">
+                  <button class="act-btn act-del sm" (click)="removeLigne(i)"><span class="material-symbols-rounded">close</span></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-col">
+        <div class="summary-card">
+          <div class="summary-hdr"><span class="material-symbols-rounded">assignment_return</span> Récapitulatif</div>
+          <div class="sum-item"><span>Facture</span><strong>{{ selectedFacture?.numero || '—' }}</strong></div>
+          <div class="sum-item"><span>Nb produits</span><strong>{{ form.lignes.length }}</strong></div>
+          <div class="sum-divider"></div>
+          <div class="sum-total">
+            <span>TOTAL AVOIR</span>
+            <div class="sum-amount red">{{ formTotal | number:'1.2-2' }}<small>DH</small></div>
+          </div>
+          <button class="btn-validate red-btn" (click)="saveAvoir()" [disabled]="saving || !formValid">
+            <span class="material-symbols-rounded">{{ saving ? 'hourglass_empty' : 'check_circle' }}</span>
+            {{ saving ? 'Enregistrement…' : 'Créer l\'avoir' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════ DETAIL ════ -->
+  <ng-container *ngIf="view === 'detail' && selectedAvoir">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()"><span class="material-symbols-rounded">arrow_back</span></button>
+        <div class="page-icon red"><span class="material-symbols-rounded">assignment_return</span></div>
+        <div>
+          <h1>{{ selectedAvoir.numero }}</h1>
+          <p>Facture {{ selectedAvoir.facture?.numero }} · {{ selectedAvoir.facture?.client?.nom }} · {{ selectedAvoir.date | date:'dd MMMM yyyy' }}</p>
+        </div>
+      </div>
+      <div class="page-hdr-right">
+        <button class="btn-pdf" (click)="generatePDF(selectedAvoir)"><span class="material-symbols-rounded">picture_as_pdf</span> PDF</button>
+        <button class="btn-danger" (click)="deleteAvoir(selectedAvoir)"><span class="material-symbols-rounded">delete</span></button>
+      </div>
+    </div>
+
+    <div class="detail-kpis">
+      <div class="kpi-card" style="--c:#EF4444">
+        <div class="kpi-ico"><span class="material-symbols-rounded">payments</span></div>
+        <div><span class="kpi-lbl">Montant Avoir</span><span class="kpi-val red">- {{ selectedAvoir.total | number:'1.2-2' }} DH</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#6366F1">
+        <div class="kpi-ico"><span class="material-symbols-rounded">receipt</span></div>
+        <div><span class="kpi-lbl">Facture liée</span><span class="kpi-val">{{ selectedAvoir.facture?.numero }}</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#8B5CF6" *ngIf="selectedAvoir.motif">
+        <div class="kpi-ico"><span class="material-symbols-rounded">info</span></div>
+        <div><span class="kpi-lbl">Motif</span><span class="kpi-val sm">{{ selectedAvoir.motif }}</span></div>
+      </div>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-card-hdr">
+        <h3><span class="material-symbols-rounded">inventory_2</span> Produits retournés</h3>
+        <span class="count-badge">{{ selectedAvoir.lignes?.length || 0 }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="av-table">
+          <thead><tr><th>Référence</th><th>Désignation</th><th class="tc">Unités</th><th class="tr">Qté (kg)</th><th class="tr">Prix/kg</th><th class="tr">Total</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let l of selectedAvoir.lignes" class="av-row">
+              <td><span class="ref-chip">{{ l.produit?.reference }}</span></td>
+              <td>{{ l.produit?.nom }}</td>
+              <td class="tc"><span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} {{ l.produit?.unite }}(s)</span></td>
+              <td class="tr mono-sm">{{ l.quantite | number:'1.2-2' }} kg</td>
+              <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+              <td class="tr mono-bold red-val">{{ l.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tbody>
+          <tfoot><tr><td colspan="5" class="tr tf-lbl">TOTAL</td><td class="tr tf-total red-val">- {{ selectedAvoir.total | number:'1.2-2' }} DH</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- PDF Preview -->
+  <div *ngIf="pdfPreviewUrl" class="pdf-overlay" (click)="closePdfPreview()">
+    <div class="pdf-modal" (click)="$event.stopPropagation()">
+      <div class="pdf-modal-hdr">
+        <div class="pdf-modal-title"><span class="material-symbols-rounded">picture_as_pdf</span><span>{{ pdfPreviewName }}</span></div>
+        <div class="pdf-modal-actions">
+          <button class="pdf-btn-dl" (click)="downloadPdf()"><span class="material-symbols-rounded">download</span> Télécharger</button>
+          <button class="pdf-btn-close" (click)="closePdfPreview()"><span class="material-symbols-rounded">close</span></button>
+        </div>
+      </div>
+      <div class="pdf-viewer-wrap"><iframe [src]="pdfPreviewUrl" class="pdf-iframe" type="application/pdf"></iframe></div>
+    </div>
+  </div>
+</div>

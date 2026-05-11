@@ -8,6 +8,9 @@ import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
 import blRouter from './routes/bons-livraison';
 import facturesRouter from './routes/factures';
+import proformasRouter from './routes/proformas';
+import avoirsRouter from './routes/avoirs';
+import dashboardRouter from './routes/dashboard';
 import { errorHandler } from './middleware/errorHandler';
 import statisticsRouter from './routes/statistics';
 dotenv.config();
@@ -27,6 +30,9 @@ app.use('/api/bons-livraison', blRouter);
 app.use('/api/factures', facturesRouter);
 app.use('/api/dashboard', statisticsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/proformas', proformasRouter);
+app.use('/api/avoirs', avoirsRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

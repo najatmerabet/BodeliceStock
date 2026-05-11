@@ -33,4 +33,8 @@ export class ProduitService {
   deleteProduit(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  getMouvements(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/mouvements`);
+  }
 }

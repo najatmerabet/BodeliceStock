@@ -46,6 +46,7 @@
             <th class="r">Kg / Unité</th>
             <th class="r">Stock Total (kg)</th>
             <th class="r">Prix / kg (DH)</th>
+            <th class="c">TVA</th>
             <th class="r">Valeur (DH)</th>
             <th class="c">Actions</th>
           </tr>
@@ -69,9 +70,11 @@
             <td class="r mono">{{ p.poidsUnitaire | number:'1.2-2' }} kg</td>
             <td class="r mono">{{ totalKg(p) | number:'1.2-2' }}</td>
             <td class="r mono">{{ p.prixUnitaire | number:'1.2-2' }}</td>
+            <td class="c"><span class="tva-pill" [class.has-tva]="p.tva && p.tva > 0">{{ p.tva || 0 }}%</span></td>
             <td class="r bold">{{ valeurTotale(p) | number:'1.2-2' }}</td>
             <td class="c">
               <div class="acts">
+                <button class="act hist" title="Historique stock" (click)="openHistory(p)"><span class="material-symbols-rounded">history</span></button>
                 <button class="act edit" title="Modifier" (click)="openEdit(p)"><span class="material-symbols-rounded">edit</span></button>
                 <button class="act del" title="Supprimer" (click)="confirmDelete(p)"><span class="material-symbols-rounded">delete</span></button>
               </div>
@@ -140,6 +143,10 @@
             <label>Prix / kg (DH)</label>
             <input type="number" [(ngModel)]="form.prixUnitaire" step="0.5" min="0" placeholder="Ex: 45.00" />
           </div>
+          <div class="fld">
+            <label>TVA (%)</label>
+            <input type="number" [(ngModel)]="form.tva" step="1" min="0" max="100" placeholder="Ex: 20" />
+          </div>
         </div>
         <div class="calc-preview" *ngIf="form.prixUnitaire && form.poidsUnitaire && form.quantite">
           <div class="calc-row">
@@ -171,6 +178,41 @@
       <div class="m-foot m-foot-center">
         <button class="btn btn-outline" (click)="cancelDelete()">Annuler</button>
         <button class="btn btn-danger" (click)="executeDelete()" [disabled]="deleting">{{ deleting ? 'Suppression...' : 'Supprimer' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div *ngIf="historyTarget" class="overlay" (click)="closeHistory()">
+    <div class="modal modal-history" (click)="$event.stopPropagation()">
+      <div class="m-head">
+        <h3><span class="material-symbols-rounded" style="margin-right:6px;font-size:20px;vertical-align:middle">history</span>Historique stock — {{ historyTarget.nom }}</h3>
+        <button class="m-close" (click)="closeHistory()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="m-body">
+        <div *ngIf="loadingHistory" class="empty"><p>Chargement...</p></div>
+        <div *ngIf="!loadingHistory && mouvements.length === 0" class="empty">
+          <span class="material-symbols-rounded">info</span>
+          <p>Aucun mouvement enregistré</p>
+        </div>
+        <div *ngIf="!loadingHistory && mouvements.length > 0" class="timeline">
+          <div *ngFor="let m of mouvements" class="tl-item">
+            <div class="tl-dot" [class.tl-up]="m.delta > 0" [class.tl-down]="m.delta < 0"></div>
+            <div class="tl-content">
+              <div class="tl-header">
+                <span class="tl-type" [class.type-up]="m.delta > 0" [class.type-down]="m.delta < 0">{{ m.type }}</span>
+                <span class="tl-date">{{ m.date | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="tl-detail">
+                <span class="tl-qty">{{ m.ancienneQte }}</span>
+                <span class="material-symbols-rounded tl-arrow">arrow_forward</span>
+                <span class="tl-qty tl-qty-new" [class.green]="m.delta > 0" [class.red]="m.delta < 0">{{ m.nouvelleQte }}</span>
+                <span class="tl-delta" [class.green]="m.delta > 0" [class.red]="m.delta < 0">({{ m.delta > 0 ? '+' : '' }}{{ m.delta }})</span>
+              </div>
+              <p class="tl-motif" *ngIf="m.motif">{{ m.motif }}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

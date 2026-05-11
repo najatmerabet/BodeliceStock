@@ -1,8 +1,16 @@
-<div class="page-container">
-  <div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Vue d'ensemble de votre activité — Bôdélice</p>
-  </div>
+<div class="db" *ngIf="!loading && summary">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="db-header">
+    <div>
+      <h1>{{ greeting }}, <span class="accent">Abdelilah</span></h1>
+      <p class="tagline">Vue d'ensemble de votre activité — Bôdélice</p>
+    </div>
+    <time class="date-chip">
+      <span class="material-symbols-rounded">schedule</span>
+      {{ today | date:'EEEE dd MMM yyyy' }}
+    </time>
+  </header>
 
   <canvas baseChart
   [data]="lineChartData"
@@ -15,28 +23,197 @@
       <div class="stat-icon" [style.background]="s.bg" [style.color]="s.color">
         <span class="material-symbols-rounded">{{ s.icon }}</span>
       </div>
-      <div class="stat-body">
-        <span class="stat-val">{{ s.value }}</span>
-        <span class="stat-lbl">{{ s.label }}</span>
-      </div>
-      <span class="stat-trend" [style.color]="s.color">{{ s.trend }}</span>
+      <h2>{{ summary.produits }}</h2>
+      <p>Produits actifs</p>
     </div>
+
+    <div class="kpi" style="--accent:#10B981">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">groups</span></div>
+        <span class="kpi-badge">Base clients</span>
+      </div>
+      <h2>{{ summary.clients }}</h2>
+      <p>Clients enregistrés</p>
+    </div>
+
+    <div class="kpi" style="--accent:#F59E0B">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">scale</span></div>
+        <span class="kpi-badge">Stock</span>
+      </div>
+      <h2>{{ summary.poidsTotal | number:'1.0-0' }}<small>kg</small></h2>
+      <p>Poids total en stock</p>
+    </div>
+
+    <div class="kpi" style="--accent:#3B82F6">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">payments</span></div>
+        <span class="kpi-badge">Valorisation</span>
+      </div>
+      <h2>{{ summary.valeurStock | number:'1.0-0' }}<small>DH</small></h2>
+      <p>Valeur totale du stock</p>
+    </div>
+  </section>
+
+  <!-- ═══ SECOND KPI ROW (FINANCE) ═══ -->
+  <section class="kpi-row finance-row">
+    <div class="kpi" style="--accent:#8B5CF6">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">receipt_long</span></div>
+        <span class="kpi-badge">Factures</span>
+      </div>
+      <h2>{{ summary.factures }}</h2>
+      <p>Factures définitives</p>
+    </div>
+
+    <div class="kpi" style="--accent:#6366F1">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">description</span></div>
+        <span class="kpi-badge">Proformas</span>
+      </div>
+      <h2>{{ summary.proformas }}</h2>
+      <p>Devis proforma</p>
+    </div>
+
+    <div class="kpi" style="--accent:#EF4444">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">assignment_return</span></div>
+        <span class="kpi-badge">Avoirs</span>
+      </div>
+      <h2>{{ summary.avoirs }}</h2>
+      <p>Retours produits</p>
+    </div>
+
+    <div class="kpi" style="--accent:#F59E0B">
+      <div class="kpi-head">
+        <div class="kpi-icon"><span class="material-symbols-rounded">local_shipping</span></div>
+        <span class="kpi-badge">Expéditions</span>
+      </div>
+      <h2>{{ summary.livraisons }}</h2>
+      <p>Bons de livraison</p>
+    </div>
+  </section>
+
+  <!-- ═══ MAIN GRID ═══ -->
+  <div class="grid-main">
+
+    <!-- LEFT: Top Produits -->
+    <section class="panel">
+      <div class="panel-hdr">
+        <h3><span class="material-symbols-rounded">leaderboard</span> Top 5 — Valeur en stock</h3>
+      </div>
+      <div class="top-list">
+        <div class="top-item" *ngFor="let p of summary.topProduits; let i = index">
+          <div class="top-rank">#{{ i + 1 }}</div>
+          <div class="top-info">
+            <div class="top-name-row">
+              <span class="top-name">{{ p.nom }}</span>
+              <span class="top-ref">{{ p.reference }}</span>
+            </div>
+            <div class="top-bar-track">
+              <div class="top-bar-fill" [style.width.%]="pctBar(p.valeur)"></div>
+            </div>
+          </div>
+          <div class="top-val">{{ p.valeur | number:'1.0-0' }} <small>DH</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Répartition par catégorie -->
+    <section class="panel">
+      <div class="panel-hdr">
+        <h3><span class="material-symbols-rounded">donut_large</span> Répartition par catégorie</h3>
+      </div>
+      <div class="cat-list">
+        <div class="cat-item" *ngFor="let c of categoryEntries">
+          <div class="cat-dot" [style.background]="c.color"></div>
+          <div class="cat-info">
+            <span class="cat-label">{{ c.label }}</span>
+            <span class="cat-count">{{ c.count }} produit{{ c.count > 1 ? 's' : '' }}</span>
+          </div>
+          <div class="cat-bar-wrap">
+            <div class="cat-bar" [style.width.%]="c.pct" [style.background]="c.color"></div>
+          </div>
+          <span class="cat-pct">{{ c.pct }}%</span>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <!-- Welcome -->
-  <div class="welcome card card-elevated">
-    <div class="welcome-badge">🏭</div>
-    <h2>Bienvenue sur ProdMeat Stock</h2>
-    <p>Gérez vos produits, clients, bons de livraison et factures depuis cette interface.</p>
-    <div class="welcome-actions">
-      <a routerLink="/produits" class="btn btn-primary">
-        <span class="material-symbols-rounded">inventory_2</span>
-        Voir les Produits
-      </a>
-      <a routerLink="/clients" class="btn btn-outline">
-        <span class="material-symbols-rounded">groups</span>
-        Voir les Clients
-      </a>
-    </div>
+  <!-- ═══ BOTTOM ROW ═══ -->
+  <div class="grid-bottom">
+
+    <!-- ALERTES -->
+    <section class="panel panel-alert" *ngIf="summary.alertes.length > 0">
+      <div class="panel-hdr alert-hdr">
+        <h3><span class="material-symbols-rounded">notification_important</span> Alertes Stock</h3>
+        <span class="alert-count">{{ summary.alertes.length }}</span>
+      </div>
+      <div class="alert-list">
+        <div class="alert-item" *ngFor="let a of summary.alertes">
+          <span class="material-symbols-rounded warn-icon">warning</span>
+          <div class="alert-info">
+            <span class="alert-name">{{ a.nom }}</span>
+            <span class="alert-detail">{{ a.reference }} — {{ a.quantite }} {{ a.unite }}{{ a.quantite > 1 ? 's' : '' }} restante{{ a.quantite > 1 ? 's' : '' }}</span>
+          </div>
+          <a [routerLink]="['/produits']" class="alert-action">Gérer →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- NO ALERTS -->
+    <section class="panel panel-ok" *ngIf="summary.alertes.length === 0">
+      <div class="ok-inner">
+        <span class="material-symbols-rounded ok-icon">verified</span>
+        <h3>Tout est sous contrôle</h3>
+        <p>Aucun produit en stock critique. Bonne gestion !</p>
+      </div>
+    </section>
+
+    <!-- QUICK ACTIONS -->
+    <section class="panel">
+      <div class="panel-hdr">
+        <h3><span class="material-symbols-rounded">bolt</span> Actions Rapides</h3>
+      </div>
+      <div class="actions-grid">
+        <a routerLink="/produits" class="qa">
+          <div class="qa-icon" style="--c:#6366F1"><span class="material-symbols-rounded">add_box</span></div>
+          <span>Nouveau Produit</span>
+        </a>
+        <a routerLink="/clients" class="qa">
+          <div class="qa-icon" style="--c:#10B981"><span class="material-symbols-rounded">person_add</span></div>
+          <span>Nouveau Client</span>
+        </a>
+        <a routerLink="/bons-livraison" class="qa">
+          <div class="qa-icon" style="--c:#F59E0B"><span class="material-symbols-rounded">local_shipping</span></div>
+          <span>Créer un BL</span>
+        </a>
+        <a routerLink="/factures" class="qa">
+          <div class="qa-icon" style="--c:#EC4899"><span class="material-symbols-rounded">receipt_long</span></div>
+          <span>Voir Factures</span>
+        </a>
+        <a routerLink="/proformas" class="qa">
+          <div class="qa-icon" style="--c:#6366F1"><span class="material-symbols-rounded">description</span></div>
+          <span>Proformas</span>
+        </a>
+        <a routerLink="/avoirs" class="qa">
+          <div class="qa-icon" style="--c:#EF4444"><span class="material-symbols-rounded">assignment_return</span></div>
+          <span>Avoirs / Retours</span>
+        </a>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<!-- Loading Skeleton -->
+<div class="skeleton-wrap" *ngIf="loading">
+  <div class="sk-header"></div>
+  <div class="sk-kpi-row">
+    <div class="sk-kpi" *ngFor="let x of [1,2,3,4]"></div>
+  </div>
+  <div class="sk-panels">
+    <div class="sk-panel"></div>
+    <div class="sk-panel"></div>
   </div>
 </div>

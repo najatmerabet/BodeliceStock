@@ -28,14 +28,14 @@ router.post('/import', authMiddleware, upload.single('file'), async (req: Reques
             prixUnitaire: parseFloat(String(row.prixUnitaire)),
             unite: String(row.unite || 'kg'),
             poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
-            quantite: parseInt(String(row.quantite || 0)),
+            quantite: parseFloat(String(row.quantite || 0)),
           },
           create: {
             reference: ref,
             nom: String(row.nom),
             unite: String(row.unite || 'kg'),
             poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
-            quantite: parseInt(String(row.quantite || 0)),
+            quantite: parseFloat(String(row.quantite || 0)),
             prixUnitaire: parseFloat(String(row.prixUnitaire)),
           }
         });
@@ -66,7 +66,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 // POST /api/produits
 router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
+    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
     if (!nom || prixUnitaire === undefined) { res.status(400).json({ error: 'nom et prixUnitaire sont obligatoires' }); return; }
     const ref = reference || await generateReference();
     const produit = await prisma.produit.create({
@@ -76,16 +76,26 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
         poidsUnitaire: poidsUnitaire || 1,
         quantite: quantite || 0,
         prixUnitaire,
+        tva: tva !== undefined ? Number(tva) : 0,
       },
     });
     res.status(201).json(produit);
-  } catch (error) { next(error); }
+  } catch (error: any) {
+    if (error.code === 'P2002') { res.status(400).json({ error: `Un produit avec ce nom existe déjà` }); return; }
+    next(error);
+  }
 });
 
 // PUT /api/produits/:id
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
+    const id = parseInt(String(req.params.id));
+    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
+
+    // Récupérer l'ancien produit pour comparer la quantité
+    const ancien = await prisma.produit.findUnique({ where: { id } });
+    if (!ancien) { res.status(404).json({ error: 'Produit non trouvé' }); return; }
+
     const data: any = {};
     if (nom !== undefined) data.nom = nom;
     if (prixUnitaire !== undefined) data.prixUnitaire = prixUnitaire;
@@ -93,14 +103,49 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
     if (poidsUnitaire !== undefined) data.poidsUnitaire = poidsUnitaire;
     if (quantite !== undefined) data.quantite = quantite;
     if (reference !== undefined) data.reference = reference;
-    const produit = await prisma.produit.update({
-      where: { id: parseInt(String(req.params.id)) }, data
+    if (tva !== undefined) data.tva = Number(tva);
+
+    const produit = await prisma.$transaction(async (tx) => {
+      const updated = await tx.produit.update({ where: { id }, data });
+
+      // Si la quantité a changé, enregistrer le mouvement
+      if (quantite !== undefined && Number(quantite) !== Number(ancien.quantite)) {
+        const ancienneQte = Number(ancien.quantite);
+        const nouvelleQte = Number(quantite);
+        const delta = nouvelleQte - ancienneQte;
+        await tx.stockMouvement.create({
+          data: {
+            produitId: id,
+            type: delta > 0 ? 'ENTREE' : 'AJUSTEMENT',
+            ancienneQte,
+            nouvelleQte,
+            delta,
+            motif: `Modification manuelle (${delta > 0 ? '+' : ''}${delta} ${ancien.unite}s)`,
+          },
+        });
+      }
+
+      return updated;
     });
+
     res.json(produit);
   } catch (error: any) {
     if (error.code === 'P2025') { res.status(404).json({ error: 'Produit non trouvé' }); return; }
     next(error);
   }
+});
+
+// GET /api/produits/:id/mouvements — Historique des mouvements de stock
+router.get('/:id/mouvements', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(String(req.params.id));
+    const mouvements = await prisma.stockMouvement.findMany({
+      where: { produitId: id },
+      orderBy: { date: 'desc' },
+      take: 50,
+    });
+    res.json(mouvements);
+  } catch (error) { next(error); }
 });
 
 // DELETE /api/produits/:id
