@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
+import authRouter from './routes/auth';
 
 import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
@@ -11,7 +12,7 @@ import proformasRouter from './routes/proformas';
 import avoirsRouter from './routes/avoirs';
 import dashboardRouter from './routes/dashboard';
 import { errorHandler } from './middleware/errorHandler';
-
+import statisticsRouter from './routes/statistics';
 dotenv.config();
 
 const app = express();
@@ -27,6 +28,8 @@ app.use('/api/produits', produitsRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/bons-livraison', blRouter);
 app.use('/api/factures', facturesRouter);
+app.use('/api/dashboard', statisticsRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/proformas', proformasRouter);
 app.use('/api/avoirs', avoirsRouter);
 app.use('/api/dashboard', dashboardRouter);

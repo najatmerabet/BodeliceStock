@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
@@ -12,7 +12,8 @@ import { RouterModule } from '@angular/router';
 export class SidebarComponent {
   @Input() collapsed = false;
   @Output() toggleCollapse = new EventEmitter<void>();
-
+ 
+  constructor(private authService: AuthService,private router: Router) {}
   menuItems = [
     { icon: 'dashboard', label: 'Dashboard', route: '/dashboard' },
     { icon: 'inventory', label: 'Produits', route: '/produits', badge: '20' },
@@ -20,6 +21,12 @@ export class SidebarComponent {
     { icon: 'local_shipping', label: 'Bons de Livraison', route: '/bons-livraison' },
     { icon: 'description', label: 'Proformas', route: '/proformas' },
     { icon: 'receipt_long', label: 'Factures', route: '/factures' },
+    
     { icon: 'assignment_return', label: 'Avoirs', route: '/avoirs' },
   ];
+
+logout(){
+  this.authService.logout();
+  this.router.navigate(['/login']);
+}
 }

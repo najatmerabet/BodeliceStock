@@ -12,12 +12,16 @@
     </time>
   </header>
 
-  <!-- ═══ KPI ROW ═══ -->
-  <section class="kpi-row">
-    <div class="kpi" style="--accent:#6366F1">
-      <div class="kpi-head">
-        <div class="kpi-icon"><span class="material-symbols-rounded">inventory_2</span></div>
-        <span class="kpi-badge">Catalogue</span>
+  <canvas baseChart
+  [data]="lineChartData"
+  [options]="lineChartOptions"
+  [type]="'line'">
+</canvas>
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat" *ngFor="let s of stats">
+      <div class="stat-icon" [style.background]="s.bg" [style.color]="s.color">
+        <span class="material-symbols-rounded">{{ s.icon }}</span>
       </div>
       <h2>{{ summary.produits }}</h2>
       <p>Produits actifs</p>
