@@ -38,7 +38,7 @@
   font-size: 0.84rem; font-weight: 500;
   transition: all 0.15s ease; margin-bottom: 2px;
   position: relative;
-
+  
   &:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
 
   &.active {
@@ -59,7 +59,7 @@
 .collapsed .nav-item { justify-content: center; padding: 11px; }
 .collapsed .nav-item.active::before { display: none; }
 
-.bottom { padding: 6px 10px 14px; }
+.bottom { padding: 10px 10px 14px; }
 .collapse-btn {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 9px 14px; border: none; border-radius: 8px;
@@ -69,7 +69,52 @@
   &:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
 }
 .collapsed .collapse-btn { justify-content: center; }
+.logout {
+  margin-top: 10px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  margin-bottom: 20px;
+}
 
+/* hover moderne */
+.logout:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fff;
+  transform: translateX(2px);
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.15);
+}
+
+/* icône */
+.logout .nav-icon {
+  color: #f87171;
+}
+
+/* effet barre gauche */
+.logout::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: #ef4444;
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.logout:hover::before {
+  transform: scaleY(1);
+}
+
+/* mode collapsed */
+.collapsed .logout {
+  justify-content: center;
+  padding: 11px;
+}
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
 }

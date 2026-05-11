@@ -23,6 +23,7 @@ model Produit {
 model Client {
   id            Int            @id @default(autoincrement())
   nom           String
+  ice           String?         
   telephone     String?
   adresse       String?
   email         String?
@@ -30,7 +31,7 @@ model Client {
   codepostal    String?
   bonsLivraison BonLivraison[]
   factures      Facture[]
-
+ 
   @@map("clients")
 }
 
@@ -71,4 +72,24 @@ model Facture {
   client   Client   @relation(fields: [clientId], references: [id])
 
   @@map("factures")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  logs     ActivityLog[]
+  @@map("users")
+}
+model ActivityLog {
+  id     Int   @id @default(autoincrement())
+  action String 
+  entity String
+  entityId Int
+  description String?
+  userId   Int
+  user   User   @relation(fields: [userId], references:[id])
+  createdAt  DateTime @default(now())
+
+  @@map("activitylog")
 }

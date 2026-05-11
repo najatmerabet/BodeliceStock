@@ -16,7 +16,7 @@ export class ClientsComponent implements OnInit {
   searchQuery = '';
   showModal = false;
   editMode = false;
-  form: Client = { nom: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
+  form: Client = { nom: '',ice: '' ,adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
   selectedClient: Client | null = null;
   deleteTarget: Client | null = null;
 deleting = false;
@@ -54,14 +54,14 @@ pageSize = 5;
 
   openAdd(): void {
     this.editMode = false;
-    this.form = { nom: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
+    this.form = { nom: '', ice: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
     this.showModal = true;
 
   }
 
   saveClient():void {
     if (this.editMode && this.selectedClient){
-      console.log('==========>Client mis à jour :');
+      console.log('==========>Client mis à jour :',this.form);
        this.clientsService.updateClient(this.selectedClient.id!, this.form).subscribe({
       
         next: (client) => {
@@ -143,10 +143,11 @@ deleteClient(client: Client): void {
 }
 
 exceltexportclients(clients: Client[]): void {
-  const headers = ['ID', 'Nom', 'Adresse', 'Téléphone', 'Email', 'Ville', 'Code Postal'];
+  const headers = ['ID', 'Nom', 'ICE', 'Adresse', 'Téléphone', 'Email', 'Ville', 'Code Postal'];
   const rows = clients.map(c => [
     c.id,
     c.nom,
+    c.ice,
     c.adresse,
     c.telephone,
     c.email || '',

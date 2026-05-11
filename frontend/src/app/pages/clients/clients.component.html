@@ -54,6 +54,7 @@
           <tr>
             <th>#</th>
             <th>Nom</th>
+            <th>ICE</th>
             <th>Téléphone</th>
             <th>Adresse</th>
             <th>Email</th>
@@ -76,10 +77,12 @@
                 <span class="prod-name">{{ client.nom }}</span>
               </div>
             </td>
-
+            <td>{{ client.ice }}</td>
             <td class="mono">{{ client.telephone }}</td>
 
             <td>{{ client.adresse }}</td>
+
+          
 
             <td>{{ client.email }}</td>
 
@@ -172,7 +175,10 @@
         <label>Nom</label>
         <input type="text" [(ngModel)]="form.nom" placeholder="Ex: Ahmed Ali">
       </div>
-
+       <div class="fld">
+        <label>ICE</label>
+        <input type="text" [(ngModel)]="form.ice" placeholder="Ex: 123456789">
+      </div>
       <div class="fld">
         <label>Téléphone</label>
         <input type="text" [(ngModel)]="form.telephone" placeholder="Ex: 0612345678">

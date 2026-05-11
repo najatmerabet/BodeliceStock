@@ -6,4 +6,5 @@ export interface  Client {
     email?: string;
     ville?: string;
     codepostal?: string;
+    ice?: string;
 }

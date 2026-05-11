@@ -130,4 +130,24 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+const startOfMonth = new Date();
+startOfMonth.setDate(1);
+startOfMonth.setHours(0, 0, 0, 0);
+
+const endOfMonth = new Date();
+endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+endOfMonth.setDate(0);
+
+const revenusMensuel = prisma.facture.aggregate({
+  _sum: {
+    total: true
+  },
+  where: {
+    date: {
+      gte: startOfMonth,
+      lte: endOfMonth
+    }
+  }
+});
+
 export default router;

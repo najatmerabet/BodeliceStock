@@ -2,13 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
+import authRouter from './routes/auth';
 
 import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
 import blRouter from './routes/bons-livraison';
 import facturesRouter from './routes/factures';
 import { errorHandler } from './middleware/errorHandler';
-
+import statisticsRouter from './routes/statistics';
 dotenv.config();
 
 const app = express();
@@ -24,6 +25,8 @@ app.use('/api/produits', produitsRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/bons-livraison', blRouter);
 app.use('/api/factures', facturesRouter);
+app.use('/api/dashboard', statisticsRouter);
+app.use('/api/auth', authRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

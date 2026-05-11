@@ -4,6 +4,11 @@
     <p class="page-subtitle">Vue d'ensemble de votre activité — Bôdélice</p>
   </div>
 
+  <canvas baseChart
+  [data]="lineChartData"
+  [options]="lineChartOptions"
+  [type]="'line'">
+</canvas>
   <!-- Stats -->
   <div class="stats">
     <div class="stat" *ngFor="let s of stats">

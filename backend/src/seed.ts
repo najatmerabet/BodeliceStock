@@ -1,5 +1,5 @@
 import prisma from './prisma';
-
+import bcrypt from 'bcrypt';
 async function main() {
   console.log('🌱 Seeding database...');
 
@@ -64,6 +64,29 @@ await prisma.produit.upsert({
     });
   }
   console.log(`✅ ${clients.length} clients créés`);
+  console.log('🎉 Seed terminé !');
+
+  const users = [
+  { email: 'admin@bodelicestock.com', password: '123456789' },
+  { email: 'amina@bodelicestock.com', password: '123456789' },
+  { email: 'oumaima@bodelicestock.com', password: '123456789' },
+];
+ for (const u of users) {
+  const hashedPassword = await bcrypt.hash(u.password, 10);
+
+  await prisma.user.upsert({
+    where: { email: u.email },
+    update: {
+      password: hashedPassword,
+    },
+    create: {
+      email: u.email,
+      password: hashedPassword,
+    },
+  });
+}
+  
+  console.log('✅ Utilisateur admin créé ou mis à jour');
   console.log('🎉 Seed terminé !');
 }
 

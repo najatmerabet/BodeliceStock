@@ -1,12 +1,24 @@
 import { Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
+import { Authlayoutcomponent } from './authlayoutcomponent/authlayoutcomponent';
 
 export const routes: Routes = [
+  {
+     path: 'auth',
+     component: Authlayoutcomponent,
+     children:[
+      {
+         path:'login',  loadComponent: () => import('./pages/auth/auth.component').then(m => m.Auth)
+      }
+     ]
+  },
   {
     path: '',
     component: LayoutComponent,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+     
+    
       {
         path: 'dashboard',
         loadComponent: () =>
@@ -34,5 +46,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: 'auth/login' },
 ];

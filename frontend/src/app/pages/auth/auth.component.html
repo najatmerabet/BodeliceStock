@@ -1,0 +1,32 @@
+<div class="login-container">
+  <div class="glass-card">
+    <div class="header">
+      
+    
+      <h1>Gestion de stock intelligente</h1>
+    </div>
+
+    <form (submit)="login()">
+      <div class="input-wrapper">
+        <label for="email">Email</label>
+        <div class="input-field">
+          <input type="email" id="email" [(ngModel)]="email" name="email" placeholder="nom@exemple.com" required>
+        </div>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="password">Mot de passe</label>
+        <div class="input-field">
+          <input type="password" id="password" [(ngModel)]="password" name="password" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="primary-button">
+        Se connecter
+        <span class="arrow">→</span>
+      </button>
+    </form>
+
+    
+  </div>
+</div>

@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
 import multer from 'multer';
 import * as xlsx from 'xlsx';
-
+import { authMiddleware } from './auth.middleware';
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -13,7 +13,7 @@ async function generateReference(): Promise<string> {
 }
 
 // POST /api/produits/import
-router.post('/import', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/import', authMiddleware, upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) { res.status(400).json({ error: 'Aucun fichier uploadé' }); return; }
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
@@ -47,7 +47,7 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
 });
 
 // GET /api/produits
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const produits = await prisma.produit.findMany({ orderBy: { reference: 'asc' } });
     res.json(produits);
@@ -55,7 +55,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/produits/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const produit = await prisma.produit.findUnique({ where: { id: parseInt(String(req.params.id)) } });
     if (!produit) { res.status(404).json({ error: 'Produit non trouvé' }); return; }
@@ -64,7 +64,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST /api/produits
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
     if (!nom || prixUnitaire === undefined) { res.status(400).json({ error: 'nom et prixUnitaire sont obligatoires' }); return; }
@@ -83,7 +83,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // PUT /api/produits/:id
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference } = req.body;
     const data: any = {};
@@ -104,7 +104,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // DELETE /api/produits/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await prisma.produit.delete({ where: { id: parseInt(String(req.params.id)) } });
     res.status(204).send();
