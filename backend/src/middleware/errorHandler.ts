@@ -14,6 +14,7 @@ export function errorHandler(
   const status = err.statusCode || 500;
   const message = err.message || 'Erreur serveur interne';
   console.error(`[ERROR] ${status} — ${message}`);
+  console.error(err); // Log full error object for debugging
   res.status(status).json({ error: message });
 }
 

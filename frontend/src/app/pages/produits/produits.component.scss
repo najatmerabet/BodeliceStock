@@ -87,6 +87,14 @@ td { padding: 13px 14px; border-bottom: 1px solid #F8FAFC; vertical-align: middl
 .tag-critical { background: #FEF2F2; color: #991B1B; animation: pulse 2s infinite; }
 .alert-icon { font-size: 14px; margin-right: 4px; }
 
+/* ── TVA Pill ── */
+.tva-pill {
+  display: inline-block; padding: 3px 9px; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 700;
+  background: #F1F5F9; color: #94A3B8;
+  &.has-tva { background: #FFF7ED; color: #C2410C; }
+}
+
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(153, 27, 27, 0.4); }
   70% { box-shadow: 0 0 0 4px rgba(153, 27, 27, 0); }
@@ -166,6 +174,49 @@ td { padding: 13px 14px; border-bottom: 1px solid #F8FAFC; vertical-align: middl
 @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+/* ── History Button ── */
+.hist:hover { background: #F0F4FF; color: #6366F1; }
+
+/* ── History Modal ── */
+.modal-history { max-width: 560px; max-height: 80vh; display: flex; flex-direction: column; }
+.modal-history .m-body { overflow-y: auto; max-height: 60vh; padding: 18px 24px; }
+
+/* ── Timeline ── */
+.timeline { padding-left: 8px; }
+.tl-item {
+  display: flex; gap: 14px; position: relative; padding-bottom: 18px;
+  &:not(:last-child)::before {
+    content: ''; position: absolute; left: 5px; top: 16px; bottom: 0;
+    width: 2px; background: #E2E8F0;
+  }
+}
+.tl-dot {
+  width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
+  background: #CBD5E1; border: 2px solid #fff; box-shadow: 0 0 0 2px #E2E8F0;
+  &.tl-up { background: #10B981; box-shadow: 0 0 0 2px #D1FAE5; }
+  &.tl-down { background: #EF4444; box-shadow: 0 0 0 2px #FEE2E2; }
+}
+.tl-content { flex: 1; }
+.tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.tl-type {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 2px 8px; border-radius: 4px; background: #F1F5F9; color: #64748B;
+  &.type-up { background: #ECFDF5; color: #059669; }
+  &.type-down { background: #FEF2F2; color: #DC2626; }
+}
+.tl-date { font-size: 0.74rem; color: #94A3B8; font-weight: 500; }
+.tl-detail {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: #F8FAFC; border-radius: 8px; border: 1px solid #F1F5F9;
+}
+.tl-qty { font-size: 0.9rem; font-weight: 700; color: #475569; font-variant-numeric: tabular-nums; }
+.tl-qty-new { font-size: 1rem; }
+.tl-arrow { font-size: 16px; color: #CBD5E1; }
+.tl-delta { font-size: 0.8rem; font-weight: 700; margin-left: auto; }
+.green { color: #059669 !important; }
+.red { color: #DC2626 !important; }
+.tl-motif { font-size: 0.78rem; color: #94A3B8; margin-top: 4px; font-style: italic; }
 
 @media (max-width: 768px) {
   .page-header { flex-direction: column; align-items: flex-start; }

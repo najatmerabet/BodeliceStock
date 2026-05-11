@@ -1,0 +1,81 @@
+
+> backend@1.0.0 dev
+> nodemon --exec ts-node src/index.ts
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🚀 Serveur démarré sur http://localhost:3000
+[0mGET /api/produits [32m200[0m 14.518 ms - 6539[0m
+[0mGET /api/produits [36m304[0m 52.290 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+🚀 Serveur démarré sur http://localhost:3000
+[0mGET /api/clients [36m304[0m 11.746 ms - -[0m
+[0mGET /api/produits [32m200[0m 18.754 ms - 6565[0m
+[0mGET /api/bons-livraison [36m304[0m 22.241 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/index.ts`[39m
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🚀 Serveur démarré sur http://localhost:3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m

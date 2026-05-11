@@ -6,4 +6,5 @@ export interface Produit {
   poidsUnitaire: number;
   quantite: number;
   prixUnitaire: number;
+  tva?: number;
 }

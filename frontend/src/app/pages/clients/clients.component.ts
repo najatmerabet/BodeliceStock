@@ -14,15 +14,16 @@ export class ClientsComponent implements OnInit {
   clients: Client[] = [];
   filteredClients: Client[] = [];
   searchQuery = '';
+  message = '';
+  messageType: 'success' | 'error' = 'success';
   showModal = false;
   editMode = false;
   form: Client = { nom: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
   selectedClient: Client | null = null;
   deleteTarget: Client | null = null;
-deleting = false;
-currentPage = 1;
-pageSize = 5;
-  constructor(private clientsService: ClientsService,private cdr: ChangeDetectorRef) {}
+  deleting = false;
+
+  constructor(private clientsService: ClientsService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadClients();
@@ -46,10 +47,23 @@ pageSize = 5;
   const q = this.searchQuery.toLowerCase();
 
   this.filteredClients = this.clients.filter(c =>
-    c.nom.toLowerCase().includes(q)
+    c.nom.toLowerCase().includes(q) ||
+    (c.telephone || '').toLowerCase().includes(q) ||
+    (c.adresse || '').toLowerCase().includes(q) ||
+    (c.ville || '').toLowerCase().includes(q) ||
+    (c.email || '').toLowerCase().includes(q)
   );
+}
 
-  this.currentPage = 1; 
+getUniqueCities(): number {
+  const cities = new Set(this.clients.filter(c => c.ville).map(c => c.ville));
+  return cities.size;
+}
+
+private showMessage(msg: string, type: 'success' | 'error'): void {
+  this.message = msg;
+  this.messageType = type;
+  setTimeout(() => { this.message = ''; this.cdr.detectChanges(); }, 4500);
 }
 
   openAdd(): void {
@@ -164,21 +178,5 @@ exceltexportclients(clients: Client[]): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-}
-
-get totalPages(): number {
-  return Math.ceil(this.filteredClients.length / this.pageSize);
-}
-
-get pagedClients(): Client[] {
-  const start = (this.currentPage - 1) * this.pageSize;
-  return this.filteredClients.slice(start, start + this.pageSize);
-}
-
-get pages(): number[] {
-  return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-}
-goToPage(page: number): void {
-  this.currentPage = page;
 }
 }

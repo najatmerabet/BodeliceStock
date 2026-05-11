@@ -1,0 +1,413 @@
+<div class="fac-page">
+
+  <!-- TOAST -->
+  <div *ngIf="message" class="toast" [class.toast-ok]="messageType==='success'" [class.toast-err]="messageType==='error'">
+    <span class="material-symbols-rounded">{{ messageType==='success' ? 'check_circle' : 'error' }}</span>
+    {{ message }}
+  </div>
+
+  <!-- ════ LIST ════ -->
+  <ng-container *ngIf="view === 'list'">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <div class="page-icon emerald"><span class="material-symbols-rounded">receipt</span></div>
+        <div>
+          <h1>Factures</h1>
+          <p>Gérez et suivez vos factures clients</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card" style="--c:#6366F1">
+        <span class="material-symbols-rounded stat-ico">receipt</span>
+        <div>
+          <span class="stat-val">{{ factures.length }}</span>
+          <span class="stat-lbl">Total</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#F59E0B">
+        <span class="material-symbols-rounded stat-ico">pending</span>
+        <div>
+          <span class="stat-val">{{ getCount('impayée') }}</span>
+          <span class="stat-lbl">Impayées</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#3B82F6">
+        <span class="material-symbols-rounded stat-ico">savings</span>
+        <div>
+          <span class="stat-val">{{ getCount('partielle') }}</span>
+          <span class="stat-lbl">Partielles</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#10B981">
+        <span class="material-symbols-rounded stat-ico">task_alt</span>
+        <div>
+          <span class="stat-val">{{ getCount('payée') }}</span>
+          <span class="stat-lbl">Payées</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="tbl-card">
+      <div class="tbl-toolbar filters-toolbar">
+        <div class="search-box">
+          <span class="material-symbols-rounded">search</span>
+          <input type="text" placeholder="Rechercher n° ou client…" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+          <span *ngIf="searchQuery" class="material-symbols-rounded clr-btn" (click)="searchQuery=''; applyFilter()">close</span>
+        </div>
+        <div class="filter-group">
+          <select [(ngModel)]="filterClient" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous les clients</option>
+            <option *ngFor="let c of getUniqueClients()" [value]="c.id">{{ c.nom }}</option>
+          </select>
+          <select [(ngModel)]="filterStatut" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="impayée">Impayée</option>
+            <option value="partielle">Partielle</option>
+            <option value="payée">Payée</option>
+          </select>
+          <input type="date" [(ngModel)]="filterDateFrom" (ngModelChange)="applyFilter()" class="filter-date" title="Date début" />
+          <input type="date" [(ngModel)]="filterDateTo" (ngModelChange)="applyFilter()" class="filter-date" title="Date fin" />
+          <button *ngIf="filterClient || filterStatut || filterDateFrom || filterDateTo" class="clear-filters" (click)="clearFilters()" title="Effacer filtres">
+            <span class="material-symbols-rounded">filter_alt_off</span>
+          </button>
+        </div>
+        <div class="tbl-toolbar-right">
+          <span class="count-badge">{{ filteredFactures.length }}</span>
+          <button class="icon-btn" (click)="loadFactures()" title="Rafraîchir">
+            <span class="material-symbols-rounded">refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="prog-bar"><div class="prog-fill"></div></div>
+
+      <div class="tbl-wrap">
+        <table class="fac-table">
+          <thead>
+            <tr>
+              <th>N° Facture</th>
+              <th>Client</th>
+              <th class="tc">Date</th>
+              <th class="tr">Total</th>
+              <th class="tr">Payé</th>
+              <th class="tr">Reste</th>
+              <th class="tc">Statut</th>
+              <th class="tc">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filteredFactures" class="fac-row" (click)="openDetail(f)">
+              <td><span class="num-tag">{{ f.numero }}</span></td>
+              <td>
+                <div class="client-cell">
+                  <div class="cl-av">{{ (f.client?.nom || '?').charAt(0) }}</div>
+                  <span class="cl-nom">{{ f.client?.nom || '—' }}</span>
+                </div>
+              </td>
+              <td class="tc date-cell">{{ f.date | date:'dd/MM/yy' }}</td>
+              <td class="tr mono-bold">{{ (f.total || 0) | number:'1.2-2' }} <small>DH</small></td>
+              <td class="tr mono-sm">{{ (f.paye || 0) | number:'1.2-2' }}</td>
+              <td class="tr" [class.red-val]="(f.reste || 0) > 0" [class.mono-bold]="(f.reste || 0) > 0" [class.mono-sm]="f.reste === 0">{{ (f.reste || 0) | number:'1.2-2' }}</td>
+              <td class="tc">
+                <span class="statut-pill"
+                  [class.pill-ok]="f.statut === 'payée'"
+                  [class.pill-warn]="f.statut === 'partielle'"
+                  [class.pill-wait]="f.statut === 'impayée'">
+                  <span class="material-symbols-rounded pill-ico">{{ f.statut === 'payée' ? 'task_alt' : f.statut === 'partielle' ? 'timelapse' : 'schedule' }}</span>
+                  {{ f.statut === 'impayée' ? 'Impayée' : f.statut === 'partielle' ? 'Partielle' : 'Payée' }}
+                </span>
+              </td>
+              <td class="tc" (click)="$event.stopPropagation()">
+                <div class="row-acts">
+                  <button class="act-btn act-view" title="Voir" (click)="openDetail(f)"><span class="material-symbols-rounded">visibility</span></button>
+                  <button class="act-btn" style="--c:#EF4444" title="PDF" (click)="generatePDF(f)"><span class="material-symbols-rounded">picture_as_pdf</span></button>
+                  <button class="act-btn act-pay" *ngIf="f.statut !== 'payée'" title="Régler" (click)="openPayment(f)"><span class="material-symbols-rounded">payments</span></button>
+                  <button class="act-btn act-del" title="Supprimer" (click)="deleteFacture(f)"><span class="material-symbols-rounded">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="filteredFactures.length === 0 && !loading" class="empty-state">
+          <div class="empty-icon"><span class="material-symbols-rounded">receipt</span></div>
+          <h3>Aucune facture</h3>
+          <p>Les factures sont générées depuis la page BL</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════ DETAIL ════ -->
+  <ng-container *ngIf="view === 'detail' && selectedFacture">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()"><span class="material-symbols-rounded">arrow_back</span></button>
+        <div class="page-icon emerald"><span class="material-symbols-rounded">receipt</span></div>
+        <div>
+          <h1>{{ selectedFacture.numero }}</h1>
+          <p>{{ selectedFacture.client?.nom }} · {{ selectedFacture.date | date:'dd MMMM yyyy' }}</p>
+        </div>
+      </div>
+      <div class="page-hdr-right">
+        <span class="statut-pill"
+          [class.pill-ok]="selectedFacture.statut === 'payée'"
+          [class.pill-warn]="selectedFacture.statut === 'partielle'"
+          [class.pill-wait]="selectedFacture.statut === 'impayée'">
+          {{ selectedFacture.statut === 'impayée' ? 'Impayée' : selectedFacture.statut === 'partielle' ? 'Partielle' : 'Payée' }}
+        </span>
+        <button class="btn-pdf" (click)="generatePDF(selectedFacture)">
+          <span class="material-symbols-rounded">picture_as_pdf</span> PDF
+        </button>
+        <button class="btn-pay" *ngIf="selectedFacture.statut !== 'payée'" (click)="openPayment(selectedFacture)">
+          <span class="material-symbols-rounded">payments</span> Régler
+        </button>
+        <button class="btn-sec" (click)="createAvoir(selectedFacture)">
+          <span class="material-symbols-rounded">assignment_return</span> Créer Avoir
+        </button>
+        <button class="btn-danger" (click)="deleteFacture(selectedFacture)">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="detail-kpis">
+      <div class="kpi-card" style="--c:#6366F1">
+        <div class="kpi-ico"><span class="material-symbols-rounded">payments</span></div>
+        <div><span class="kpi-lbl">Total</span><span class="kpi-val">{{ (selectedFacture.total || 0) | number:'1.2-2' }} DH</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#10B981">
+        <div class="kpi-ico"><span class="material-symbols-rounded">savings</span></div>
+        <div><span class="kpi-lbl">Payé</span><span class="kpi-val green">{{ (selectedFacture.paye || 0) | number:'1.2-2' }} DH</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#EF4444">
+        <div class="kpi-ico"><span class="material-symbols-rounded">money_off</span></div>
+        <div><span class="kpi-lbl">Reste</span><span class="kpi-val" [class.red]="(selectedFacture.reste || 0) > 0">{{ (selectedFacture.reste || 0) | number:'1.2-2' }} DH</span></div>
+      </div>
+      <!-- Progress -->
+      <div class="kpi-card kpi-progress" style="--c:#8B5CF6">
+        <div class="kpi-ico"><span class="material-symbols-rounded">speed</span></div>
+        <div style="flex:1">
+          <span class="kpi-lbl">Avancement</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getPaymentPercent()"></div>
+          </div>
+          <span class="kpi-val sm">{{ getPaymentPercent() | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produits Facturés -->
+    <div class="tbl-card">
+      <div class="tbl-card-hdr">
+        <h3><span class="material-symbols-rounded">inventory_2</span> Produits facturés</h3>
+        <span class="count-badge">{{ selectedFacture.lignes?.length || 0 }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="fac-table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Désignation</th>
+              <th class="tc">Colis</th>
+              <th class="tr">Qté (kg)</th>
+              <th class="tr">Prix/kg</th>
+              <th class="tc">Remise</th>
+              <th class="tc">TVA</th>
+              <th class="tr">Total TTC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of selectedFacture.lignes" class="fac-row">
+              <td><span class="ref-chip">{{ l.produit?.reference }}</span></td>
+              <td>{{ l.produit?.nom }}</td>
+              <td class="tc mono-sm">{{ l.nbUnites ? (l.nbUnites + ' × ' + l.poidsUnitaire + 'kg') : '-' }}</td>
+              <td class="tr mono-sm">{{ l.quantite | number:'1.2-2' }} kg</td>
+              <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+              <td class="tc">
+                <span class="remise-badge" [class.has-remise]="l.remise > 0">{{ l.remise | number:'1.0-0' }}%</span>
+              </td>
+              <td class="tc">
+                <span class="tva-badge">{{ l.tva | number:'1.0-0' }}%</span>
+              </td>
+              <td class="tr mono-bold">{{ l.totalTTC | number:'1.2-2' }} DH</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr *ngIf="(selectedFacture.totalRemise || 0) > 0">
+              <td colspan="7" class="tr tf-lbl">Total HT</td>
+              <td class="tr tf-val">{{ (selectedFacture.totalHT || 0) | number:'1.2-2' }} DH</td>
+            </tr>
+            <tr *ngIf="(selectedFacture.totalRemise || 0) > 0">
+              <td colspan="7" class="tr tf-lbl">Total Remises</td>
+              <td class="tr tf-val red">- {{ (selectedFacture.totalRemise || 0) | number:'1.2-2' }} DH</td>
+            </tr>
+            <tr>
+              <td colspan="7" class="tr tf-lbl">Total TVA</td>
+              <td class="tr tf-val">{{ (selectedFacture.totalTVA || 0) | number:'1.2-2' }} DH</td>
+            </tr>
+            <tr>
+              <td colspan="7" class="tr tf-lbl">TOTAL TTC</td>
+              <td class="tr tf-total">{{ (selectedFacture.total || 0) | number:'1.2-2' }} DH</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- BLs Table -->
+    <div class="tbl-card">
+      <div class="tbl-card-hdr">
+        <h3><span class="material-symbols-rounded">local_shipping</span> Bons de Livraison associés</h3>
+        <span class="count-badge">{{ selectedFacture.bonsLivraison?.length || 0 }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="fac-table">
+          <thead>
+            <tr>
+              <th>N° BL</th>
+              <th class="tc">Date</th>
+              <th class="tr">Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bl of selectedFacture.bonsLivraison" class="fac-row">
+              <td><span class="num-tag">{{ bl.numero }}</span></td>
+              <td class="tc date-cell">{{ bl.date | date:'dd/MM/yyyy' }}</td>
+              <td class="tr mono-bold">{{ bl.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="tr tf-lbl">TOTAL</td>
+              <td class="tr tf-total">{{ selectedFacture.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Avoirs Table -->
+    <div class="tbl-card" *ngIf="selectedFacture.avoirs?.length">
+      <div class="tbl-card-hdr">
+        <h3 class="red-text"><span class="material-symbols-rounded">assignment_return</span> Avoirs (Retours produits)</h3>
+        <span class="count-badge red-badge">{{ selectedFacture.avoirs?.length }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="fac-table">
+          <thead>
+            <tr>
+              <th>N° Avoir</th>
+              <th class="tc">Date</th>
+              <th class="tr">Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of selectedFacture.avoirs" class="fac-row">
+              <td><span class="num-tag red-tag">{{ a.numero }}</span></td>
+              <td class="tc date-cell">{{ a.date | date:'dd/MM/yyyy' }}</td>
+              <td class="tr mono-bold red-val">- {{ a.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Paiements History -->
+    <div class="tbl-card" *ngIf="selectedFacture.paiements?.length">
+      <div class="tbl-card-hdr">
+        <h3 class="green-text"><span class="material-symbols-rounded">payments</span> Historique des paiements</h3>
+        <span class="count-badge green-badge">{{ selectedFacture.paiements?.length }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="fac-table">
+          <thead>
+            <tr>
+              <th class="tc">Date</th>
+              <th class="tc">Méthode</th>
+              <th class="tr">Montant</th>
+              <th>Remarque</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of selectedFacture.paiements" class="fac-row">
+              <td class="tc date-cell">{{ p.date | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="tc">
+                <span class="methode-badge" [class.esp]="p.methode === 'ESPECE'" [class.cheq]="p.methode === 'CHEQUE'" [class.vir]="p.methode === 'VIREMENT'">
+                  {{ getMethodeLabel(p.methode) }}
+                </span>
+              </td>
+              <td class="tr mono-bold green-val">+ {{ p.montant | number:'1.2-2' }} DH</td>
+              <td class="mono-sm">{{ p.remarque || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════ PAYMENT MODAL ════ -->
+  <div *ngIf="showPaymentModal" class="overlay" (click)="closePayment()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-pay-icon"><span class="material-symbols-rounded">payments</span></div>
+      <h3>Enregistrer un paiement</h3>
+      <p>Facture <strong>{{ selectedFacture?.numero }}</strong></p>
+      <div class="fld">
+        <label>Montant (DH)</label>
+        <input type="number" [(ngModel)]="paymentMontant" [max]="selectedFacture?.reste || 0" min="0" />
+      </div>
+      <div class="fld">
+        <label>Méthode de paiement</label>
+        <select [(ngModel)]="paymentMethod">
+          <option value="ESPECE">Espèce</option>
+          <option value="CHEQUE">Chèque</option>
+          <option value="VIREMENT">Virement</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Remarque (optionnel)</label>
+        <input type="text" [(ngModel)]="paymentRemarque" placeholder="N° cheque, ref virement..." />
+      </div>
+      <div class="modal-info">
+        <span class="material-symbols-rounded">info</span>
+        Reste à payer : <strong>{{ (selectedFacture?.reste || 0) | number:'1.2-2' }} DH</strong>
+      </div>
+      <div class="modal-acts">
+        <button class="btn-sec" (click)="closePayment()">Annuler</button>
+        <button class="btn-pay" (click)="confirmPayment()" [disabled]="paymentLoading || paymentMontant <= 0">
+          <span class="material-symbols-rounded">{{ paymentLoading ? 'hourglass_empty' : 'check_circle' }}</span>
+          {{ paymentLoading ? 'Traitement…' : 'Valider' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Preview -->
+  <div *ngIf="pdfPreviewUrl" class="pdf-overlay" (click)="closePdfPreview()">
+    <div class="pdf-modal" (click)="$event.stopPropagation()">
+      <div class="pdf-modal-hdr">
+        <div class="pdf-modal-title">
+          <span class="material-symbols-rounded">picture_as_pdf</span>
+          {{ pdfPreviewName }}
+        </div>
+        <div class="pdf-modal-actions">
+          <button class="pdf-btn-dl" (click)="downloadPdf()">
+            <span class="material-symbols-rounded">download</span> Télécharger
+          </button>
+          <button class="pdf-btn-close" (click)="closePdfPreview()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="pdf-viewer-wrap">
+        <iframe [src]="pdfPreviewUrl" class="pdf-iframe"></iframe>
+      </div>
+    </div>
+  </div>
+
+</div>

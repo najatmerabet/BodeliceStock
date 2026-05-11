@@ -1,0 +1,652 @@
+<div class="bl-page">
+
+  <!-- ═══ TOAST ═══ -->
+  <div *ngIf="message" class="toast" [class.toast-ok]="messageType==='success'" [class.toast-err]="messageType==='error'">
+    <span class="material-symbols-rounded">{{ messageType==='success' ? 'check_circle' : 'error' }}</span>
+    {{ message }}
+  </div>
+
+  <!-- ════════════════════════ LIST VIEW ════════════════════════ -->
+  <ng-container *ngIf="view === 'list'">
+
+    <!-- Page Header -->
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <div class="page-icon"><span class="material-symbols-rounded">local_shipping</span></div>
+        <div>
+          <h1>Bons de Livraison</h1>
+          <p>Gérez et suivez tous vos bons de livraison</p>
+        </div>
+      </div>
+      <button class="btn-create" (click)="openCreate()">
+        <span class="material-symbols-rounded">add</span>
+        Nouveau BL
+      </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card" style="--c:#6366F1">
+        <span class="material-symbols-rounded stat-ico">receipt_long</span>
+        <div>
+          <span class="stat-val">{{ bls.length }}</span>
+          <span class="stat-lbl">Total BL</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#F59E0B">
+        <span class="material-symbols-rounded stat-ico">pending</span>
+        <div>
+          <span class="stat-val">{{ getBlCount('EN_ATTENTE') }}</span>
+          <span class="stat-lbl">En attente</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#10B981">
+        <span class="material-symbols-rounded stat-ico">task_alt</span>
+        <div>
+          <span class="stat-val">{{ getBlCount('FACTURÉ') }}</span>
+          <span class="stat-lbl">Facturés</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c:#3B82F6">
+        <span class="material-symbols-rounded stat-ico">payments</span>
+        <div>
+          <span class="stat-val">{{ getBlTotal() | number:'1.0-0' }}</span>
+          <span class="stat-lbl">Total DH</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="tbl-card">
+      <div class="tbl-toolbar filters-toolbar">
+        <div class="search-box">
+          <span class="material-symbols-rounded">search</span>
+          <input type="text" placeholder="Rechercher n° ou client…" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+          <span *ngIf="searchQuery" class="material-symbols-rounded clr-btn" (click)="searchQuery=''; applyFilter()">close</span>
+        </div>
+        <div class="filter-group">
+          <select [(ngModel)]="filterClient" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous les clients</option>
+            <option *ngFor="let c of getUniqueClients()" [value]="c.id">{{ c.nom }}</option>
+          </select>
+          <select [(ngModel)]="filterStatut" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="A FACTURER">À facturer</option>
+            <option value="PROFORMA">Proforma</option>
+            <option value="FACTURÉ">Facturé</option>
+          </select>
+          <input type="date" [(ngModel)]="filterDateFrom" (ngModelChange)="applyFilter()" class="filter-date" title="Date début" />
+          <input type="date" [(ngModel)]="filterDateTo" (ngModelChange)="applyFilter()" class="filter-date" title="Date fin" />
+          <button *ngIf="filterClient || filterStatut || filterDateFrom || filterDateTo" class="clear-filters" (click)="clearFilters()" title="Effacer filtres">
+            <span class="material-symbols-rounded">filter_alt_off</span>
+          </button>
+        </div>
+        <div class="tbl-toolbar-right">
+          <div class="selection-actions" *ngIf="selectedBlIds.size > 0">
+            <button class="btn-proforma" (click)="generateProformaFromSelection()">
+              <span class="material-symbols-rounded">description</span>
+              Proforma ({{ selectedBlIds.size }})
+            </button>
+            <button class="btn-facture" (click)="generateFactureFromSelection()">
+              <span class="material-symbols-rounded">receipt</span>
+              Facturer ({{ selectedBlIds.size }})
+            </button>
+          </div>
+          <span class="count-badge">{{ filteredBls.length }}</span>
+          <button class="icon-btn" (click)="loadBls()" title="Rafraîchir">
+            <span class="material-symbols-rounded">refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="prog-bar"><div class="prog-fill"></div></div>
+
+      <div class="tbl-wrap">
+        <table class="bl-table">
+          <thead>
+            <tr>
+              <th class="tc chk-col">
+                <input type="checkbox" (change)="toggleAll($event)" [checked]="isAllSelected()" />
+              </th>
+              <th>N° Bon</th>
+              <th>Client</th>
+              <th class="tc">Statut</th>
+              <th class="tc">Date</th>
+              <th class="tr">Lignes</th>
+              <th class="tr">Total</th>
+              <th class="tc">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bl of pagedBls"
+                class="bl-row"
+                [class.row-selected]="selectedBlIds.has(bl.id)"
+                (click)="toggleSelection(bl, $event)">
+              <td class="tc chk-col" (click)="$event.stopPropagation()">
+                <input type="checkbox"
+                       [checked]="selectedBlIds.has(bl.id)"
+                       (change)="toggleSelection(bl, $event)"
+                       [disabled]="bl['statut'] === 'FACTURÉ'" />
+              </td>
+              <td>
+                <span class="num-tag">{{ bl.numero }}</span>
+              </td>
+              <td>
+                <div class="client-cell">
+                  <div class="cl-av">{{ (bl['client']?.nom || '?').charAt(0) }}</div>
+                  <div class="cl-info">
+                    <span class="cl-nom">{{ bl['client']?.nom || '—' }}</span>
+                    <span class="cl-ville">{{ bl['client']?.ville || '' }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="tc">
+                <span class="statut-pill" 
+                      [class.pill-ok]="bl['statut'] === 'FACTURÉ'" 
+                      [class.pill-proforma]="bl['statut'] === 'PROFORMA'"
+                      [class.pill-wait]="bl['statut'] !== 'FACTURÉ' && bl['statut'] !== 'PROFORMA'">
+                  <span class="material-symbols-rounded pill-ico">
+                    {{ bl['statut'] === 'FACTURÉ' ? 'task_alt' : (bl['statut'] === 'PROFORMA' ? 'description' : 'schedule') }}
+                  </span>
+                  {{ bl['statut'] }}
+                </span>
+              </td>
+              <td class="tc date-cell">{{ bl.date | date:'dd/MM/yy' }}</td>
+              <td class="tr">
+                <span class="lines-chip">{{ bl['lignes']?.length || 0 }} ligne{{ (bl['lignes']?.length || 0) > 1 ? 's' : '' }}</span>
+              </td>
+              <td class="tr total-cell">{{ bl.total | number:'1.2-2' }} <small>DH</small></td>
+              <td class="tc" (click)="$event.stopPropagation()">
+                <div class="row-acts">
+                  <button class="act-btn act-view" title="Voir détail" (click)="openDetail(bl)">
+                    <span class="material-symbols-rounded">visibility</span>
+                  </button>
+                  <button class="act-btn act-edit" title="Modifier" (click)="openEdit(bl)" [disabled]="bl['statut'] === 'FACTURÉ'">
+                    <span class="material-symbols-rounded">edit</span>
+                  </button>
+                  <button class="act-btn act-pdf" title="PDF" (click)="generatePDF(bl)">
+                    <span class="material-symbols-rounded">picture_as_pdf</span>
+                  </button>
+                  <button class="act-btn act-del" title="Supprimer" (click)="confirmDelete(bl)">
+                    <span class="material-symbols-rounded">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="filteredBls.length === 0 && !loading" class="empty-state">
+          <div class="empty-icon"><span class="material-symbols-rounded">local_shipping</span></div>
+          <h3>Aucun bon de livraison</h3>
+          <p>Créez votre premier BL pour commencer</p>
+          <button class="btn-create" (click)="openCreate()">
+            <span class="material-symbols-rounded">add</span> Créer un BL
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="totalPages > 1" class="pager">
+        <span class="pager-info">Page {{ currentPage }} / {{ totalPages }}</span>
+        <div class="pager-btns">
+          <button class="pg-btn" [disabled]="currentPage===1" (click)="goToPage(currentPage-1)">
+            <span class="material-symbols-rounded">chevron_left</span>
+          </button>
+          <button *ngFor="let p of pageNumbers" class="pg-btn" [class.pg-active]="p===currentPage" (click)="goToPage(p)">{{ p }}</button>
+          <button class="pg-btn" [disabled]="currentPage===totalPages" (click)="goToPage(currentPage+1)">
+            <span class="material-symbols-rounded">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════ CREATE VIEW ════════════════════════ -->
+  <ng-container *ngIf="view === 'create'">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()">
+          <span class="material-symbols-rounded">arrow_back</span>
+        </button>
+        <div class="page-icon"><span class="material-symbols-rounded">add_circle</span></div>
+        <div>
+          <h1>Nouveau Bon de Livraison</h1>
+          <p>Remplissez les étapes ci-dessous</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="create-grid">
+      <!-- LEFT: Steps -->
+      <div class="steps-col">
+
+        <!-- STEP 1: Client -->
+        <div class="step-card">
+          <div class="step-hdr">
+            <div class="step-num">1</div>
+            <div>
+              <h3>Client</h3>
+              <p>Sélectionnez le destinataire</p>
+            </div>
+            <span class="material-symbols-rounded step-check" *ngIf="form.clientId > 0">check_circle</span>
+          </div>
+          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="checkFormValid()">
+            <option [value]="0" disabled>— Choisir un client —</option>
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
+          </select>
+          <div *ngIf="form.clientId > 0" class="client-preview">
+            <ng-container *ngFor="let c of clients">
+              <ng-container *ngIf="c.id == form.clientId">
+                <span class="material-symbols-rounded">store</span>
+                <div>
+                  <strong>{{ c.nom }}</strong>
+                  <span>{{ c.adresse }}{{ c.telephone ? ' · ' + c.telephone : '' }}</span>
+                </div>
+              </ng-container>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- STEP 2: Ajouter produit -->
+        <div class="step-card">
+          <div class="step-hdr">
+            <div class="step-num">2</div>
+            <div>
+              <h3>Ajouter des produits</h3>
+              <p>Sélectionnez produit, quantité et prix</p>
+            </div>
+          </div>
+          <div class="add-grid">
+            <div class="fld span2">
+              <label>Produit</label>
+              <select [(ngModel)]="newLigne.produitId" (ngModelChange)="onProduitChange()">
+                <option [value]="0" disabled>— Choisir un produit —</option>
+                <option *ngFor="let p of produits" [value]="p.id">
+                  {{ p.reference }} · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
+                </option>
+              </select>
+            </div>
+            <div class="fld">
+              <label>Nb <span class="unit-hint" *ngIf="newLigne.produitUnite">{{ newLigne.produitUnite }}s</span></label>
+              <input type="number" [(ngModel)]="newLigne.nbUnites" min="1" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld">
+              <label>Poids / <span class="unit-hint">{{ newLigne.produitUnite || 'unité' }}</span></label>
+              <input type="number" [(ngModel)]="newLigne.poidsUnitaire" step="0.1" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld">
+              <label>Prix / kg</label>
+              <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld fld-btn">
+              <button class="add-ligne-btn" (click)="addLigne()" [disabled]="!newLigne.produitId || (newLigne.nbUnites || 0) <= 0">
+                <span class="material-symbols-rounded">add_circle</span>
+                Ajouter
+              </button>
+            </div>
+          </div>
+          <div *ngIf="newLigne.produitId && newLigne.quantite > 0" class="ligne-preview">
+            <span>Poids total : <strong>{{ newLigne.quantite | number:'1.2-2' }} kg</strong></span>
+            <span>Sous-total : <strong>{{ newLigne.total | number:'1.2-2' }} DH</strong></span>
+          </div>
+        </div>
+
+        <!-- STEP 3: Lignes -->
+        <div class="step-card" *ngIf="form.lignes.length > 0">
+          <div class="step-hdr">
+            <div class="step-num">3</div>
+            <div>
+              <h3>Lignes du bon <span class="count-badge">{{ form.lignes.length }}</span></h3>
+              <p>Vérifiez avant de valider</p>
+            </div>
+          </div>
+          <table class="bl-table inner-tbl">
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th class="tc">Détails</th>
+                <th class="tr">Poids</th>
+                <th class="tr">Prix/kg</th>
+                <th class="tr">Sous-total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of form.lignes; trackBy: trackByLigne" class="bl-row">
+                <td>
+                  <span class="ref-chip">{{ l.produitRef }}</span>
+                  {{ l.produitNom }}
+                </td>
+                <td class="tc"><span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} × {{ l.poidsUnitaire }}kg</span></td>
+                <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }} kg</td>
+                <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+                <td class="tr mono-bold">{{ l.total | number:'1.2-2' }} DH</td>
+                <td class="tc">
+                  <button class="act-btn act-del sm" (click)="removeLigne(form.lignes.indexOf(l))">
+                    <span class="material-symbols-rounded">close</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RIGHT: Summary -->
+      <div class="summary-col">
+        <div class="summary-card">
+          <div class="summary-hdr">
+            <span class="material-symbols-rounded">receipt_long</span>
+            Récapitulatif
+          </div>
+          <div class="sum-item">
+            <span>Client</span>
+            <strong *ngFor="let c of clients"><ng-container *ngIf="c.id == form.clientId">{{ c.nom }}</ng-container></strong>
+            <strong *ngIf="!form.clientId">—</strong>
+          </div>
+          <div class="sum-item">
+            <span>Nb produits</span>
+            <strong>{{ form.lignes.length }}</strong>
+          </div>
+          <div class="sum-divider"></div>
+          <div class="sum-total">
+            <span>TOTAL HT</span>
+            <div class="sum-amount">{{ totalForm | number:'1.2-2' }}<small>DH</small></div>
+          </div>
+          <button class="btn-validate" (click)="saveBL()" [disabled]="saving || !formValid">
+            <span class="material-symbols-rounded">{{ saving ? 'hourglass_empty' : 'check_circle' }}</span>
+            {{ saving ? 'Enregistrement…' : 'Valider & Créer le BL' }}
+          </button>
+          <p *ngIf="!formValid" class="hint-warn">
+            <span class="material-symbols-rounded">info</span>
+            {{ !form.clientId ? 'Sélectionnez un client' : 'Ajoutez au moins un produit' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════ DETAIL VIEW ════════════════════════ -->
+  <ng-container *ngIf="view === 'detail' && selectedBl">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()">
+          <span class="material-symbols-rounded">arrow_back</span>
+        </button>
+        <div class="page-icon indigo"><span class="material-symbols-rounded">receipt_long</span></div>
+        <div>
+          <h1>{{ selectedBl.numero }}</h1>
+          <p>{{ selectedBl.date | date:'EEEE dd MMMM yyyy' }}</p>
+        </div>
+      </div>
+      <div class="page-hdr-right">
+        <span class="statut-pill" [class.pill-ok]="selectedBl['statut'] === 'FACTURÉ'" [class.pill-wait]="selectedBl['statut'] !== 'FACTURÉ'">
+          <span class="material-symbols-rounded pill-ico">{{ selectedBl['statut'] === 'FACTURÉ' ? 'task_alt' : 'schedule' }}</span>
+          {{ selectedBl['statut'] }}
+        </span>
+        <button class="btn-sec" *ngIf="selectedBl['statut'] !== 'FACTURÉ'" (click)="openEdit(selectedBl)">
+          <span class="material-symbols-rounded">edit</span> Modifier
+        </button>
+        <button class="btn-sec" (click)="generatePDF(selectedBl)" [disabled]="generatingPdf">
+          <span class="material-symbols-rounded">{{ generatingPdf ? 'hourglass_empty' : 'picture_as_pdf' }}</span>
+          {{ generatingPdf ? 'Génération…' : 'PDF' }}
+        </button>
+        <button class="btn-danger" (click)="confirmDelete(selectedBl)">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="detail-kpis">
+      <div class="kpi-card" style="--c:#6366F1">
+        <div class="kpi-ico"><span class="material-symbols-rounded">tag</span></div>
+        <div><span class="kpi-lbl">N° Bon</span><span class="kpi-val">{{ selectedBl.numero }}</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#8B5CF6">
+        <div class="kpi-ico"><span class="material-symbols-rounded">person</span></div>
+        <div><span class="kpi-lbl">Client</span><span class="kpi-val">{{ selectedBl['client']?.nom || '—' }}</span></div>
+      </div>
+      <div class="kpi-card" style="--c:#F59E0B">
+        <div class="kpi-ico"><span class="material-symbols-rounded">calendar_today</span></div>
+        <div><span class="kpi-lbl">Date</span><span class="kpi-val">{{ selectedBl.date | date:'dd/MM/yyyy' }}</span></div>
+      </div>
+      <div class="kpi-card kpi-total" style="--c:#10B981">
+        <div class="kpi-ico"><span class="material-symbols-rounded">payments</span></div>
+        <div><span class="kpi-lbl">Total</span><span class="kpi-val big">{{ selectedBl.total | number:'1.2-2' }} DH</span></div>
+      </div>
+    </div>
+
+    <!-- Produits table -->
+    <div class="tbl-card">
+      <div class="tbl-card-hdr">
+        <h3><span class="material-symbols-rounded">inventory_2</span> Produits livrés</h3>
+        <span class="count-badge">{{ selectedBl['lignes']?.length || 0 }} ligne{{ (selectedBl['lignes']?.length || 0) > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="bl-table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Désignation</th>
+              <th class="tc">Unité</th>
+               <th class="tc">NB Unites</th>
+              <th class="tr">Qté (kg)</th>
+              <th class="tr">Prix/kg</th>
+              <th class="tr">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of selectedBl['lignes']" class="bl-row">
+              <td><span class="ref-chip">{{ l['produit']?.reference }}</span></td>
+              <td class="prod-name">{{ l['produit']?.nom }}</td>
+              <td class="tc"><span class="unit-chip">{{ l['produit']?.unite }}</span></td>
+               <td class="tc"><span class="unit-chip">{{ l.nbUnites + "   " + l['produit']?.unite + "(s)" }}</span></td>
+              <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }}</td>
+              <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+              <td class="tr mono-bold">{{ l.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="tr tf-lbl">TOTAL</td>
+              <td class="tr tf-total">{{ selectedBl.total | number:'1.2-2' }} DH</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Client Info -->
+    <div class="tbl-card client-info-card" *ngIf="selectedBl['client']">
+      <div class="tbl-card-hdr">
+        <h3><span class="material-symbols-rounded">store</span> Informations client</h3>
+      </div>
+      <div class="ci-grid">
+        <div class="ci-item" *ngIf="selectedBl['client'].nom">
+          <span class="ci-lbl">Nom</span><span class="ci-val">{{ selectedBl['client'].nom }}</span>
+        </div>
+        <div class="ci-item" *ngIf="selectedBl['client'].telephone">
+          <span class="ci-lbl">Téléphone</span><span class="ci-val">{{ selectedBl['client'].telephone }}</span>
+        </div>
+        <div class="ci-item" *ngIf="selectedBl['client'].adresse">
+          <span class="ci-lbl">Adresse</span><span class="ci-val">{{ selectedBl['client'].adresse }}</span>
+        </div>
+        <div class="ci-item" *ngIf="selectedBl['client'].ville">
+          <span class="ci-lbl">Ville</span><span class="ci-val">{{ selectedBl['client'].ville }}</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════ EDIT VIEW ════════════════════════ -->
+  <ng-container *ngIf="view === 'edit' && editingBl">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <button class="back-btn" (click)="backToList()">
+          <span class="material-symbols-rounded">arrow_back</span>
+        </button>
+        <div class="page-icon" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+          <span class="material-symbols-rounded">edit</span>
+        </div>
+        <div>
+          <h1>Modifier {{ editingBl.numero }}</h1>
+          <p>Modifiez le client ou les produits livrés</p>
+        </div>
+      </div>
+      <div class="edit-badge">
+        <span class="material-symbols-rounded">warning</span>
+        Le stock sera automatiquement ajusté
+      </div>
+    </div>
+
+    <div class="create-grid">
+      <div class="steps-col">
+        <!-- Client -->
+        <div class="step-card">
+          <div class="step-hdr">
+            <div class="step-num">1</div>
+            <div><h3>Client</h3><p>Modifiez si nécessaire</p></div>
+            <span class="material-symbols-rounded step-check" *ngIf="form.clientId > 0">check_circle</span>
+          </div>
+          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="checkFormValid()">
+            <option [value]="0" disabled>— Choisir un client —</option>
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
+          </select>
+        </div>
+
+        <!-- Ajouter produit -->
+        <div class="step-card">
+          <div class="step-hdr">
+            <div class="step-num">2</div>
+            <div><h3>Produits</h3><p>Ajoutez ou supprimez des lignes</p></div>
+          </div>
+          <div class="add-grid">
+            <div class="fld span2">
+              <label>Produit</label>
+              <select [(ngModel)]="newLigne.produitId" (ngModelChange)="onProduitChange()">
+                <option [value]="0" disabled>— Choisir un produit —</option>
+                <option *ngFor="let p of produits" [value]="p.id">
+                  {{ p.reference }} · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
+                </option>
+              </select>
+            </div>
+            <div class="fld">
+              <label>Nb <span class="unit-hint" *ngIf="newLigne.produitUnite">{{ newLigne.produitUnite }}s</span></label>
+              <input type="number" [(ngModel)]="newLigne.nbUnites" min="1" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld">
+              <label>Poids / <span class="unit-hint">{{ newLigne.produitUnite || 'unité' }}</span></label>
+              <input type="number" [(ngModel)]="newLigne.poidsUnitaire" step="0.1" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld">
+              <label>Prix / kg</label>
+              <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            </div>
+            <div class="fld fld-btn">
+              <button class="add-ligne-btn" (click)="addLigne()" [disabled]="!newLigne.produitId || (newLigne.nbUnites || 0) <= 0">
+                <span class="material-symbols-rounded">add_circle</span> Ajouter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lignes actuelles -->
+        <div class="step-card" *ngIf="form.lignes.length > 0">
+          <div class="step-hdr">
+            <div class="step-num">3</div>
+            <div><h3>Lignes <span class="count-badge">{{ form.lignes.length }}</span></h3><p>Modifiez les quantités ou supprimez</p></div>
+          </div>
+          <table class="bl-table inner-tbl">
+            <thead><tr>
+              <th>Produit</th><th class="tc">Détails</th>
+              <th class="tr">Poids</th><th class="tr">Prix/kg</th><th class="tr">Sous-total</th><th></th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let l of form.lignes; trackBy: trackByLigne" class="bl-row">
+                <td><span class="ref-chip">{{ l.produitRef }}</span>{{ l.produitNom }}</td>
+                <td class="tc"><span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} × {{ l.poidsUnitaire }}kg</span></td>
+                <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }} kg</td>
+                <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
+                <td class="tr mono-bold">{{ l.total | number:'1.2-2' }} DH</td>
+                <td class="tc">
+                  <button class="act-btn act-del sm" (click)="removeLigne(form.lignes.indexOf(l))">
+                    <span class="material-symbols-rounded">close</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-col">
+        <div class="summary-card">
+          <div class="summary-hdr">
+            <span class="material-symbols-rounded">edit_document</span>
+            Modification
+          </div>
+          <div class="sum-item"><span>N° BL</span><strong>{{ editingBl.numero }}</strong></div>
+          <div class="sum-item">
+            <span>Client</span>
+            <strong *ngFor="let c of clients"><ng-container *ngIf="c.id == form.clientId">{{ c.nom }}</ng-container></strong>
+          </div>
+          <div class="sum-item"><span>Nb produits</span><strong>{{ form.lignes.length }}</strong></div>
+          <div class="sum-divider"></div>
+          <div class="sum-total">
+            <span>TOTAL HT</span>
+            <div class="sum-amount">{{ totalForm | number:'1.2-2' }}<small>DH</small></div>
+          </div>
+          <button class="btn-validate edit-validate" (click)="updateBL()" [disabled]="saving || !formValid">
+            <span class="material-symbols-rounded">{{ saving ? 'hourglass_empty' : 'save' }}</span>
+            {{ saving ? 'Enregistrement…' : 'Sauvegarder les modifications' }}
+          </button>
+          <p *ngIf="!formValid" class="hint-warn">
+            <span class="material-symbols-rounded">info</span>
+            {{ !form.clientId ? 'Sélectionnez un client' : 'Ajoutez au moins un produit' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ═══ DELETE MODAL ═══ -->
+  <div *ngIf="deleteTarget" class="overlay" (click)="cancelDelete()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-warn"><span class="material-symbols-rounded">warning</span></div>
+      <h3>Supprimer {{ deleteTarget.numero }} ?</h3>
+      <p>Le stock de tous les produits livrés sera <strong>automatiquement restauré</strong>.</p>
+      <div class="modal-acts">
+        <button class="btn-sec" (click)="cancelDelete()">Annuler</button>
+        <button class="btn-danger" (click)="executeDelete()" [disabled]="deleting">
+          {{ deleting ? 'Suppression…' : 'Confirmer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ═══ PDF PREVIEW MODAL ═══ -->
+  <div *ngIf="pdfPreviewUrl" class="pdf-overlay" (click)="closePdfPreview()">
+    <div class="pdf-modal" (click)="$event.stopPropagation()">
+      <div class="pdf-modal-hdr">
+        <div class="pdf-modal-title">
+          <span class="material-symbols-rounded">picture_as_pdf</span>
+          <span>{{ pdfPreviewName }}</span>
+        </div>
+        <div class="pdf-modal-actions">
+          <button class="pdf-btn-dl" (click)="downloadPdf()">
+            <span class="material-symbols-rounded">download</span>
+            Télécharger
+          </button>
+          <button class="pdf-btn-close" (click)="closePdfPreview()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="pdf-viewer-wrap">
+        <iframe [src]="pdfPreviewUrl" class="pdf-iframe" type="application/pdf"></iframe>
+      </div>
+    </div>
+  </div>
+
+</div>

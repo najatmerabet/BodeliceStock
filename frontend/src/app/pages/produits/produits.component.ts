@@ -26,13 +26,18 @@ export class ProduitsComponent implements OnInit {
 
   showModal = false;
   editMode = false;
-  form: Produit = { nom: '', unite: 'kg', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0 };
+  form: Produit = { nom: '', unite: 'boule', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0, tva: 0 };
   saving = false;
 
   deleteTarget: Produit | null = null;
   deleting = false;
 
-  unites = ['kg', 'boule', 'pièce', 'litre', 'rouleau', 'sachet'];
+  // Stock history
+  historyTarget: Produit | null = null;
+  mouvements: any[] = [];
+  loadingHistory = false;
+
+  unites = ['boule', 'sachet'];
 
   constructor(private produitService: ProduitService, private cdr: ChangeDetectorRef) {}
 
@@ -47,6 +52,7 @@ export class ProduitsComponent implements OnInit {
           prixUnitaire: Number(p.prixUnitaire),
           poidsUnitaire: Number(p.poidsUnitaire),
           quantite: Number(p.quantite),
+          tva: Number(p.tva || 0),
         }));
         
         this.applyFilter();
@@ -97,7 +103,7 @@ export class ProduitsComponent implements OnInit {
   // Add / Edit
   openAdd(): void {
     this.editMode = false;
-    this.form = { nom: '', unite: 'kg', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0 };
+    this.form = { nom: '', unite: 'boule', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0, tva: 0 };
     this.showModal = true;
   }
 
@@ -120,7 +126,7 @@ export class ProduitsComponent implements OnInit {
     } else {
       this.produitService.addProduit(this.form).subscribe({
         next: () => { this.showMessage(`"${this.form.nom}" ajouté`, 'success'); this.closeModal(); this.saving = false; this.loadProduits(); },
-        error: () => { this.saving = false; this.showMessage("Erreur ajout", 'error'); }
+        error: (e) => { this.saving = false; this.showMessage(e?.error?.error || 'Erreur lors de l\'ajout', 'error'); }
       });
     }
   }
@@ -135,6 +141,31 @@ export class ProduitsComponent implements OnInit {
       next: () => { this.showMessage(`"${this.deleteTarget!.nom}" supprimé`, 'success'); this.deleteTarget = null; this.deleting = false; this.loadProduits(); },
       error: () => { this.deleting = false; this.showMessage('Erreur suppression', 'error'); }
     });
+  }
+
+  // Stock History
+  openHistory(p: Produit): void {
+    this.historyTarget = p;
+    this.loadingHistory = true;
+    this.mouvements = [];
+    this.produitService.getMouvements(p.id!).subscribe({
+      next: (data) => {
+        this.mouvements = data.map(m => ({
+          ...m,
+          ancienneQte: Number(m.ancienneQte),
+          nouvelleQte: Number(m.nouvelleQte),
+          delta: Number(m.delta),
+        }));
+        this.loadingHistory = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.loadingHistory = false; }
+    });
+  }
+
+  closeHistory(): void {
+    this.historyTarget = null;
+    this.mouvements = [];
   }
 
   // Excel
