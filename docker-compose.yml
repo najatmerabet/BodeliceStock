@@ -20,7 +20,7 @@ services:
     restart: always
 
   db:
-    image: postgres:15
+    image: postgres:13-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
