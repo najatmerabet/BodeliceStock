@@ -187,107 +187,306 @@ export class ProformasComponent implements OnInit {
   getCount(statut: string): number { return this.proformas.filter(p => p.statut === statut).length; }
 
   // ── PDF ──
-  generatePDF(p: FactureProforma): void {
+ async generatePDF(p: FactureProforma): Promise<void> {
     this.generatingPdf = true;
-    this.proformaService.getById(p.id).subscribe({
-      next: (full) => {
-        const doc = new jsPDF();
-        const primaryColor: [number, number, number] = [99, 102, 241];
+    try {
+      const full = await new Promise<any>((resolve, reject) => {
+        this.proformaService.getById(p.id).subscribe({ next: resolve, error: reject });
+      });
 
-        // Header
-        doc.setFillColor(...primaryColor);
-        doc.rect(0, 0, 210, 38, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text('FACTURE PROFORMA', 14, 18);
-        doc.setFontSize(11);
-        doc.text(full.numero, 14, 28);
-        doc.setFontSize(9);
-        doc.text(new Date(full.date).toLocaleDateString('fr-FR'), 14, 35);
+      const jspdfModule = await import('jspdf');
+      const autotableModule = await import('jspdf-autotable');
+      const jsPDF = jspdfModule.default || (jspdfModule as any).jsPDF;
+      const autoTable = autotableModule.default || (autotableModule as any).autoTable;
 
-        // Statut
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(150, 8, 46, 12, 3, 3, 'F');
-        doc.setTextColor(...primaryColor);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text(full.statut, 173, 15.5, { align: 'center' });
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        // Client
-        doc.setTextColor(30, 41, 59);
-        doc.setFontSize(10);
+      const client: any = full.client || {};
+      const lignes: any[] = full.lignes || [];
+
+      const NOIR: [number, number, number] = [30, 30, 30];
+      const GRIS: [number, number, number] = [100, 116, 139];
+      const GRIS_L: [number, number, number] = [160, 170, 180];
+      const LIGHT: [number, number, number] = [248, 250, 252];
+      const BORDER: [number, number, number] = [200, 210, 220];
+      const WHITE: [number, number, number] = [255, 255, 255];
+
+      const W = 210;
+      const H = 297;
+      const ML = 10;
+      const MR = 10;
+
+      doc.setFillColor(...WHITE);
+      doc.rect(0, 0, W, H, 'F');
+
+      // 1. LOGO BÔDÉLICE
+      const LOGO_X = ML;
+      const LOGO_Y = 8;
+      const LOGO_W = 40;
+      const LOGO_H = 40;
+
+      try {
+        const logoImg = new Image();
+        logoImg.src = 'assets/logo.png';
+        await new Promise<void>((resolve) => {
+          logoImg.onload = () => resolve();
+          setTimeout(resolve, 500);
+        });
+        if (logoImg.complete) {
+          doc.addImage(logoImg, 'PNG', LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
+        }
+      } catch (e) {
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(LOGO_X, LOGO_Y, LOGO_W, LOGO_H, 2, 2, 'D');
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text('Client :', 14, 52);
+        doc.setTextColor(...NOIR);
+        doc.text('BÔDÉLICE', LOGO_X + LOGO_W / 2, LOGO_Y + 11, { align: 'center' });
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(...GRIS);
+        doc.text('Goût, qualité, tradition', LOGO_X + LOGO_W / 2, LOGO_Y + 17, { align: 'center' });
+      }
+
+      // 2. INFOS PRODMEAT
+      const INFO_Y = LOGO_Y + LOGO_H + 5;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.text('PRODMEAT', ML, INFO_Y);
+
+      const prodmeatLines = [
+        'BD MLY ISMAIL RES MLY ISMAIL N°22 ETG 5',
+        'N 19 - TANGER',
+        'TÉL : 06 66 57 03 03',
+        'MAIL : SECRETARIATPRODMEAT@GMAIL.COM',
+        'N° ONSSA: MAPAV.34.21.24',
+      ];
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.setFontSize(8);
+      prodmeatLines.forEach((line, i) => doc.text(line, ML, INFO_Y + 4 + i * 4));
+
+      // 3. BLOC CLIENT
+      const CX = 105;
+      const CY = LOGO_Y;
+      const CW = W - CX - MR;
+      const CH = 44;
+
+      doc.setFillColor(...LIGHT);
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
+
+      
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...NOIR);
+      if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
+
+      doc.setFont('helvetica', 'bold');
+      const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
+      if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...NOIR);
+      if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
+      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, CY + 40);
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRIS_L);
+      doc.text('1/1', W - MR, CY + 5, { align: 'right' });
+
+      // 4. BANDEAU "PROFORMA N°" + "BL-REF-DATE"
+      const infoBottomY = INFO_Y + 4 + prodmeatLines.length * 4;
+      const BY = Math.max(CY + CH, infoBottomY) + 3;
+      const BH = 9;
+
+      // ── Textes ──────────────────────────────────────────────────
+      const blInfos: string[] = [];
+      (full.bonsLivraison || []).forEach((bl: any) => {
+        const blRef = bl.numero || '';
+        const blDateObj = bl.date ? new Date(bl.date) : null;
+        const blDate = blDateObj
+          ? blDateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
+          : '';
+        if (blRef) blInfos.push(`${blRef} ${blDate ? '-' + blDate : ''}`);
+      });
+      const blLine = blInfos.join(' | ');
+      const rightText = blLine ? `${blLine}` : '';
+
+      // ── Mesure dynamique ────────────────────────────────────────
+      const PAD = 4; // padding interne de chaque côté
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'bold');
+      const labelW = doc.getTextWidth('FACTURE PROFORMA N°');
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      const numeroW = doc.getTextWidth(full.numero || 'FP-XXXX');
+
+      const LEFT_W = PAD + labelW + 4 + numeroW + PAD; // 4 = espace entre label et numéro
+
+      let RIGHT_W = 0;
+      if (rightText) {
+        doc.setFontSize(7.5);
         doc.setFont('helvetica', 'normal');
-        doc.text(full.client?.nom || '—', 35, 52);
-        if (full.client?.adresse) doc.text(full.client.adresse, 35, 58);
-        if (full.client?.ville) doc.text(full.client.ville, 35, 64);
-        if (full.client?.telephone) doc.text('Tél : ' + full.client.telephone, 35, 70);
+        RIGHT_W = Math.max(60, PAD + doc.getTextWidth(rightText) + PAD);
+      }
 
-        // Table produits
-        const rows = (full.lignes || []).map(l => [
-          l.produit?.reference || '',
-          l.produit?.nom || '',
-          Number(l.quantite).toFixed(2) + ' kg',
-          Number(l.prix).toFixed(2) + ' DH',
-          Number(l.remise).toFixed(0) + '%',
-          Number(l.tva).toFixed(0) + '%',
-          Number(l.totalApresRemise).toFixed(2) + ' DH',
-          Number(l.totalTTC).toFixed(2) + ' DH',
+      const BW = LEFT_W + RIGHT_W;
+
+      // ── Dessin du bandeau ───────────────────────────────────────
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(ML, BY, BW, BH);
+
+      // Séparateur vertical
+      if (rightText) {
+        doc.line(ML + LEFT_W, BY, ML + LEFT_W, BY + BH);
+      }
+
+      // Cellule gauche : "FACTURE PROFORMA N°" + numéro
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.text('FACTURE PROFORMA N°', ML + 6, BY + BH - 2.5);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.text(full.numero || 'FP-XXXX', ML + PAD + labelW + 4, BY + BH - 2.5);
+
+      // Cellule droite : "BL: ..."
+      if (rightText) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...NOIR);
+        doc.text(rightText, ML + LEFT_W + PAD, BY + BH - 2.5);
+      }
+
+      // 5. TABLEAU PRODUITS
+      const bodyRows: any[] = [];
+
+      lignes.forEach((l: any) => {
+        const prix = Number(l.prix ?? 0);
+        const total = Number(l.totalApresRemise ?? l.total ?? 0);
+        const tva = Number(l.tva ?? l.produit?.tva ?? 0);
+        const unite = l.produit?.unite || 'boule';
+
+        bodyRows.push([
+          (l.produit?.reference || '').toUpperCase(),
+          (l.produit?.nom || '').toUpperCase(),
+          `${tva}%`,
+          l.nbUnites ? `${Number(l.nbUnites)}` : '-',
+          unite,
+          `${prix.toFixed(2)}`,
+          `${total.toFixed(2)}`,
         ]);
+      });
 
-        autoTable(doc, {
-          startY: 82,
-          head: [['Réf.', 'Désignation', 'Qté', 'Prix/kg', 'Remise', 'TVA', 'HT net', 'TTC']],
-          body: rows,
-          headStyles: { fillColor: primaryColor, textColor: [255,255,255], fontSize: 8, fontStyle: 'bold' },
-          bodyStyles: { fontSize: 8, textColor: [30,41,59] },
-          alternateRowStyles: { fillColor: [249,250,251] },
-          columnStyles: { 2:{halign:'right'}, 3:{halign:'right'}, 4:{halign:'center'}, 5:{halign:'center'}, 6:{halign:'right'}, 7:{halign:'right'} },
-        });
+      autoTable(doc, {
+        startY: BY + BH + 3,
+        margin: { left: ML, right: MR },
+        head: [['RÉF', 'DÉSIGNATION', 'TVA', 'QTE', 'UNITÉ', 'PRIX U HT', 'TOTAL HT']],
+        body: bodyRows,
+        theme: 'plain',
+        styles: {
+          textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, minCellHeight: 10, fillColor: WHITE,
+        },
+        headStyles: {
+          fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7.5, lineColor: BORDER, lineWidth: 0.3,
+        },
+        alternateRowStyles: { fillColor: WHITE },
+        columnStyles: {
+          0: { cellWidth: 24, halign: 'left' as const },
+          1: { cellWidth: 52, halign: 'left' as const },
+          2: { cellWidth: 15, halign: 'center' as const },
+          3: { cellWidth: 18, halign: 'center' as const },
+          4: { cellWidth: 22, halign: 'center' as const },
+          5: { cellWidth: 32, halign: 'right' as const },
+          6: { cellWidth: 32, halign: 'right' as const },
+        },
+      });
 
-        const finalY = (doc as any).lastAutoTable.finalY + 10;
+      // 6. BLOC TOTAUX
+      const tableEndY: number = (doc as any).lastAutoTable?.finalY ?? 200;
 
-        // Totaux
-        const totals = [
-          ['Total HT', Number(full.totalHT).toFixed(2) + ' DH'],
-          ['Remises', '- ' + Number(full.totalRemise).toFixed(2) + ' DH'],
-          ['HT net', (Number(full.totalHT) - Number(full.totalRemise)).toFixed(2) + ' DH'],
-          ['TVA', Number(full.totalTVA).toFixed(2) + ' DH'],
-          ['TOTAL TTC', Number(full.totalTTC).toFixed(2) + ' DH'],
-        ];
-        let ty = finalY;
-        totals.forEach(([label, val], i) => {
-          const isTTC = i === totals.length - 1;
-          if (isTTC) {
-            doc.setFillColor(...primaryColor);
-            doc.rect(130, ty - 5, 70, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-          } else {
-            doc.setTextColor(100, 116, 139);
-          }
-          doc.setFontSize(isTTC ? 10 : 9);
-          doc.setFont('helvetica', isTTC ? 'bold' : 'normal');
-          doc.text(label, 135, ty + 1);
-          doc.text(val, 196, ty + 1, { align: 'right' });
-          ty += 11;
-        });
+      const totalHT = Number(full.totalHT ?? 0);
+      const totalRemise = Number(full.totalRemise ?? 0);
+      const totalTVA = Number(full.totalTVA ?? 0);
+      const totalTTC = Number(full.totalTTC ?? 0);
 
+      const totRows = [
+        { label: 'TOTAL HT',      value: `${totalHT.toFixed(2)} DH`,      bold: true },
+        { label: 'TOTAL REMISE',  value: `- ${totalRemise.toFixed(2)} DH` },
+        { label: 'TVA',           value: `${totalTVA.toFixed(2)} DH` },
+        { label: 'TOTAL TTC',     value: `${totalTTC.toFixed(2)} DH`,      bold: true },
+        { label: 'RESTE À PAYER', value: `${totalTTC.toFixed(2)} DH`,      bold: true, red: true },
+      ];
+
+      const ROW_H = 7.5;
+      const BOX_W = 87;
+      const BOX_X = W - MR - BOX_W;
+      const BOX_Y = tableEndY + 4;
+
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(BOX_X, BOX_Y, BOX_W, totRows.length * ROW_H);
+
+      totRows.forEach(({ label, value, bold, red }, i) => {
+        const rowY = BOX_Y + i * ROW_H;
+        if (i > 0) { doc.setDrawColor(...BORDER); doc.line(BOX_X, rowY, BOX_X + BOX_W, rowY); }
+        if (label === 'TOTAL TTC' || label === 'RESTE À PAYER') {
+          doc.setFillColor(...LIGHT);
+          doc.rect(BOX_X, rowY, BOX_W, ROW_H, 'F');
+        }
+        const textY = rowY + ROW_H - 2.2;
         doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text('Document non contractuel — Valable 30 jours', 105, 285, { align: 'center' });
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        const textColor: [number, number, number] = red ? [200, 50, 50] : NOIR;
+        doc.setTextColor(...textColor);
+        doc.text(label, BOX_X + 3, textY);
+        doc.text(value, BOX_X + BOX_W - 3, textY, { align: 'right' });
+      });
 
-        const pdfBlob = doc.output('blob');
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        this.pdfPreviewBlobUrl = blobUrl;
-        this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
-        this.pdfPreviewName = `${full.numero}.pdf`;
-        this.generatingPdf = false;
-        this.cdr.detectChanges();
-      },
-      error: () => { this.generatingPdf = false; this.cdr.detectChanges(); }
-    });
+      // 7. FOOTER
+      const FY = H - 16;
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.3);
+      doc.line(ML, FY, W - MR, FY);
+
+      doc.setFontSize(6.2);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRIS);
+      doc.text('PRODMEAT - Bd mly Ismail res mly Ismail N°22 etg 5 - N 19 - TANGER', W / 2, FY + 4, { align: 'center' });
+      doc.text('ICE : 003291478000039   R.C: 1328011   CNSS 4810442   Patente: 57225884   IF: 53783148', W / 2, FY + 8, { align: 'center' });
+      doc.text('Attijariwafa Bank   007 640 00 14335000003128 43', W / 2, FY + 12, { align: 'center' });
+
+      const pdfBlob = doc.output('blob');
+      if (this.pdfPreviewBlobUrl) URL.revokeObjectURL(this.pdfPreviewBlobUrl);
+      this.pdfPreviewBlobUrl = URL.createObjectURL(pdfBlob);
+      this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfPreviewBlobUrl);
+      this.pdfPreviewName = `${full.numero || 'DRAFT'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+    } catch (err) {
+      console.error('PDF error:', err);
+      this.showMessage('Erreur génération PDF', 'error');
+    } finally {
+      this.generatingPdf = false;
+      this.cdr.detectChanges();
+    }
   }
 
   closePdfPreview(): void {

@@ -298,50 +298,315 @@ export class AvoirsComponent implements OnInit {
   }
 
   // PDF
-  generatePDF(a: FactureAvoir): void {
+  async generatePDF(a: FactureAvoir): Promise<void> {
     this.avoirService.getById(a.id).subscribe({
-      next: (full) => {
-        const doc = new jsPDF();
-        const color: [number, number, number] = [220, 38, 38];
+      next: async (full) => {
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const W = 210, H = 297, ML = 14, MR = 14;
 
-        doc.setFillColor(...color);
-        doc.rect(0, 0, 210, 38, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-        doc.text("FACTURE D'AVOIR", 14, 18);
-        doc.setFontSize(11); doc.text(full.numero, 14, 28);
-        doc.setFontSize(9); doc.text(new Date(full.date).toLocaleDateString('fr-FR'), 14, 35);
+        const NOIR: [number, number, number] = [15, 23, 42];
+        const GRIS: [number, number, number] = [100, 116, 139];
+        const GRIS_L: [number, number, number] = [148, 163, 184];
+        const WHITE: [number, number, number] = [255, 255, 255];
+        const LIGHT: [number, number, number] = [248, 250, 252];
+        const BORDER: [number, number, number] = [226, 232, 240];
+        const ROUGE: [number, number, number] = [180, 30, 30];
 
-        doc.setTextColor(30, 41, 59); doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold'); doc.text('Facture liée :', 14, 50);
-        doc.setFont('helvetica', 'normal'); doc.text(full.facture?.numero || '—', 50, 50);
-        doc.setFont('helvetica', 'bold'); doc.text('Client :', 14, 57);
-        doc.setFont('helvetica', 'normal'); doc.text(full.facture?.client?.nom || '—', 50, 57);
-        if (full.motif) { doc.text('Motif : ' + full.motif, 14, 67); }
+        doc.setFillColor(...WHITE);
+        doc.rect(0, 0, W, H, 'F');
 
-        const rows = (full.lignes || []).map(l => [
-          l.produit?.reference || '',
-          l.produit?.nom || '',
-          (l.nbUnites ? Number(l.nbUnites).toFixed(0) + ' ' + (l.produit?.unite || '') + '(s) × ' + Number(l.poidsUnitaire).toFixed(2) + 'kg = ' : '') + Number(l.quantite).toFixed(2) + ' kg',
-          Number(l.prix).toFixed(2) + ' DH',
-          Number(l.total).toFixed(2) + ' DH',
-        ]);
+        const client = full.facture?.client || {};
 
-        autoTable(doc, {
-          startY: full.motif ? 75 : 68,
-          head: [['Réf.', 'Désignation', 'Qté retournée', 'Prix/kg', 'Total']],
-          body: rows,
-          headStyles: { fillColor: color, textColor: [255,255,255], fontSize: 8 },
-          bodyStyles: { fontSize: 8, textColor: [30,41,59] },
-          columnStyles: { 2:{halign:'right'}, 3:{halign:'right'}, 4:{halign:'right'} },
+        // 1. LOGO BÔDÉLICE
+        const LOGO_X = ML;
+        const LOGO_Y = 8;
+        const LOGO_W = 40;
+        const LOGO_H = 40;
+
+        try {
+          const logoImg = new Image();
+          logoImg.src = 'assets/logo.png';
+          await new Promise<void>((resolve) => {
+            logoImg.onload = () => resolve();
+            setTimeout(resolve, 500);
+          });
+          if (logoImg.complete) {
+            doc.addImage(logoImg, 'PNG', LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
+          }
+        } catch (e) {
+          doc.setDrawColor(...BORDER);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(LOGO_X, LOGO_Y, LOGO_W, LOGO_H, 2, 2, 'D');
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...NOIR);
+          doc.text('BÔDÉLICE', LOGO_X + LOGO_W / 2, LOGO_Y + 11, { align: 'center' });
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...GRIS);
+          doc.text('Goût, qualité, tradition', LOGO_X + LOGO_W / 2, LOGO_Y + 17, { align: 'center' });
+        }
+
+        // 2. INFOS PRODMEAT
+        const INFO_Y = LOGO_Y + LOGO_H + 5;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...NOIR);
+        doc.text('PRODMEAT', ML, INFO_Y);
+
+        const prodmeatLines = [
+          'BD MLY ISMAIL RES MLY ISMAIL N°22 ETG 5',
+          'N 19 - TANGER',
+          'TÉL : 06 66 57 03 03',
+          'MAIL : SECRETARIATPRODMEAT@GMAIL.COM',
+          'N° ONSSA: MAPAV.34.21.24',
+        ];
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...NOIR);
+        doc.setFontSize(8);
+        prodmeatLines.forEach((line, i) => doc.text(line, ML, INFO_Y + 4 + i * 4));
+
+        // 3. BLOC CLIENT
+        const CX = 105;
+        const CY = LOGO_Y;
+        const CW = W - CX - MR;
+        const CH = 44;
+
+        doc.setFillColor(...LIGHT);
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...NOIR);
+        doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...NOIR);
+        if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
+
+        doc.setFont('helvetica', 'bold');
+        const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
+        if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...NOIR);
+        if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
+        if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, CY + 40);
+
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...GRIS_L);
+        doc.text('1/1', W - MR, CY + 5, { align: 'right' });
+
+// 4. BANDEAU "FACTURE D'AVOIR N°" + Facture liée + date
+        const BY = CY + CH + 25;
+        const BH = 9;
+
+        const dateObj = full.date ? new Date(full.date) : new Date();
+        const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+        const rightText = full.facture?.numero ? `FACTURE: ${full.facture.numero} | ${dateStr}` : dateStr;
+
+        // ── Mesure dynamique ─
+        const PAD = 4;
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        const labelW = doc.getTextWidth("FACTURE D'AVOIR N°");
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        const numeroW = doc.getTextWidth(full.numero || 'AV-XXXX');
+
+        const LEFT_W = PAD + labelW + 4 + numeroW + PAD;
+
+        let RIGHT_W = 0;
+        if (rightText) {
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          RIGHT_W = Math.max(60, PAD + doc.getTextWidth(rightText) + PAD);
+        }
+
+        const BW = LEFT_W + RIGHT_W;
+
+        // ── Dessin du bandeau ─
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.rect(ML, BY, BW, BH);
+
+        // Séparateur vertical
+        if (rightText) {
+          doc.line(ML + LEFT_W, BY, ML + LEFT_W, BY + BH);
+        }
+
+        // Cellule gauche : "FACTURE D'AVOIR N°" + numéro
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ROUGE);
+        doc.text("FACTURE D'AVOIR N°", ML + 6, BY + BH - 2.5);
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ROUGE);
+        doc.text(full.numero || 'AV-XXXX', ML + PAD + labelW + 4, BY + BH - 2.5);
+
+        // Cellule droite
+        if (rightText) {
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...NOIR);
+          doc.text(rightText, 12 + LEFT_W + PAD, BY + BH - 2.5);
+        }
+
+        // 5. MOTIF (si présent)
+        let startY = BY + BH + 6;
+        if (full.motif) {
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(100, 116, 139);
+          doc.text(`MOTIF: ${full.motif}`, ML, startY);
+          startY += 6;
+        }
+
+        // 6. TABLEAU PRODUITS
+        const rows = (full.lignes || []).map((l: any) => {
+          const unite = l.produit?.unite || 'boule';
+          const prix = Number(l.prix);
+          const total = Number(l.total);
+          const tva = Number(l.tva ?? l.produit?.tva ?? 0);
+          return [
+            (l.produit?.reference || '').toUpperCase(),
+            (l.produit?.nom || '').toUpperCase(),
+            `${tva}%`,
+            l.nbUnites ? `${Number(l.nbUnites)}` : '-',
+            unite,
+            `- ${prix.toFixed(2)}`,
+            `- ${total.toFixed(2)}`,
+          ];
         });
 
-        const fy = (doc as any).lastAutoTable.finalY + 14;
-        doc.setFillColor(...color);
-        doc.rect(130, fy - 5, 66, 12, 'F');
-        doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-        doc.text('TOTAL AVOIR', 135, fy + 2);
-        doc.text(Number(full.total).toFixed(2) + ' DH', 193, fy + 2, { align: 'right' });
+        autoTable(doc, {
+          startY: startY + 3,
+          head: [['RÉF', 'DÉSIGNATION', 'TVA', 'QTE', 'UNITÉ', 'PRIX U HT', 'TOTAL HT']],
+          body: rows,
+          theme: 'plain',
+          styles: {
+            textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, minCellHeight: 10, fillColor: WHITE,
+          },
+          headStyles: {
+            fillColor: ROUGE, textColor: WHITE, fontStyle: 'bold', fontSize: 7.5, lineColor: BORDER, lineWidth: 0.3,
+          },
+          alternateRowStyles: { fillColor: WHITE },
+          columnStyles: {
+            0: { cellWidth: 24, halign: 'left' as const },
+            1: { cellWidth: 52, halign: 'left' as const },
+            2: { cellWidth: 15, halign: 'center' as const },
+            3: { cellWidth: 18, halign: 'center' as const },
+            4: { cellWidth: 22, halign: 'center' as const },
+            5: { cellWidth: 32, halign: 'right' as const },
+            6: { cellWidth: 32, halign: 'right' as const },
+          },
+        });
+
+        // 6. BLOC TOTAUX
+        const tableEndY: number = (doc as any).lastAutoTable?.finalY ?? 200;
+        const totalAvoir = Number(full.total ?? 0);
+
+        const ROW_H = 8;
+        const BOX_W = 70;
+        const BOX_X = W - MR - BOX_W;
+        const BOX_Y = tableEndY + 4;
+
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.rect(BOX_X, BOX_Y, BOX_W, ROW_H);
+
+        doc.setFillColor(...LIGHT);
+        doc.rect(BOX_X, BOX_Y, BOX_W, ROW_H, 'F');
+
+        const textY = BOX_Y + ROW_H - 2.5;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ROUGE);
+        doc.text('TOTAL', BOX_X + 3, textY);
+        doc.text(`- ${totalAvoir.toFixed(2)} DH`, BOX_X + BOX_W - 3, textY, { align: 'right' });
+
+        // TOTAL AVOIR en gras à droite du tableau (encadré)
+        const summaryX = BOX_X + BOX_W + 8;
+        const summaryY = tableEndY + 4;
+        const summaryW = 55;
+        const summaryH = 16;
+        
+        doc.setFillColor(...LIGHT);
+        doc.setDrawColor(...ROUGE);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(summaryX, summaryY, summaryW, summaryH, 2, 2, 'FD');
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ROUGE);
+        doc.text('TOTAL AVOIR', summaryX + summaryW/2, summaryY + 4, { align: 'center' });
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ROUGE);
+        doc.text(`- ${totalAvoir.toFixed(2)} DH`, summaryX + summaryW/2, summaryY + 12, { align: 'center' });
+
+        // 7. HISTORIQUE DES PAIEMENTS
+        const paiements: any[] = (full as any).paiements || [];
+        if (paiements.length > 0) {
+          const payTableY = tableEndY + 10;
+
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...NOIR);
+          doc.text('HISTORIQUE DES PAIEMENTS', ML, payTableY);
+
+          const tableStartY = payTableY + 5;
+          const bodyRows = paiements.map((p: any) => {
+            const pDate = p.date ? new Date(p.date) : new Date();
+            const methodeLabel = this.getMethodeLabel(p.methode || 'ESPECE');
+            return [
+              ('0' + pDate.getDate()).slice(-2) + '/' + ('0' + (pDate.getMonth() + 1)).slice(-2) + '/' + pDate.getFullYear(),
+              (p.libelle || methodeLabel).toUpperCase(),
+              Number(p.montant || 0).toFixed(2) + ' DH',
+            ];
+          });
+          const totalPaye = Number((full as any).paye ?? 0);
+
+          autoTable(doc, {
+            startY: tableStartY,
+            margin: { left: ML },
+            head: [['DATE', 'LIBELLÉ', 'MONTANT']],
+            body: bodyRows,
+            foot: [['', 'TOTAL PAYÉ', `${totalPaye.toFixed(2)} DH`]],
+            theme: 'plain',
+            styles: { textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, fontSize: 7 },
+            headStyles: { fillColor: LIGHT, textColor: NOIR, fontStyle: 'bold', fontSize: 7, lineColor: BORDER, lineWidth: 0.3 },
+            footStyles: { fillColor: LIGHT, textColor: NOIR, fontStyle: 'bold', fontSize: 7, lineColor: BORDER, lineWidth: 0.3 },
+            columnStyles: {
+              0: { cellWidth: 20, halign: 'left' as const },
+              1: { cellWidth: 35, halign: 'left' as const },
+              2: { cellWidth: 25, halign: 'right' as const },
+            },
+          });
+        }
+
+        // 8. FOOTER
+        const FY = H - 16;
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(ML, FY, W - MR, FY);
+
+        doc.setFontSize(6.2);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...GRIS);
+        doc.text('PRODMEAT - Bd mly Ismail res mly Ismail N°22 etg 5 - N 19 - TANGER', W / 2, FY + 4, { align: 'center' });
+        doc.text('ICE : 003291478000039   R.C: 1328011   CNSS 4810442   Patente: 57225884   IF: 53783148', W / 2, FY + 8, { align: 'center' });
+        doc.text('Attijariwafa Bank   007 640 00 14335000003128 43', W / 2, FY + 12, { align: 'center' });
 
         const blob = doc.output('blob');
         const url = URL.createObjectURL(blob);
@@ -368,5 +633,18 @@ export class AvoirsComponent implements OnInit {
   private showMessage(msg: string, type: 'success' | 'error'): void {
     this.message = msg; this.messageType = type;
     setTimeout(() => { this.message = ''; this.cdr.detectChanges(); }, 4500);
+  }
+
+  private getMethodeLabel(methode: string): string {
+    const labels: Record<string, string> = {
+      'ESPECE': 'Espèces',
+      'CHEQUE': 'Chèque',
+      'VIREMENT': 'Virement',
+      'LETTRE_CHEQUE': 'Lettre de change',
+      'TRAITE': 'Traite',
+      'VERSEMENT': 'Versement',
+      'MOBILE_MONEY': 'Mobile Money',
+    };
+    return labels[methode] || methode;
   }
 }

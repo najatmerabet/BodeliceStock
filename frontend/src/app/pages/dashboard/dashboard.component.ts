@@ -14,9 +14,15 @@ import { BaseChartDirective } from 'ng2-charts';
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {
+  loading = false;
+  summary: any = {};
+  greeting = '';
+  today = new Date();
   ProduitsCount = 0;
   ClientsCount = 0;
   stats: any[] = [];
+  categoryEntries: any[] = [];
+  pctBar(val: number): number { return Math.min(100, (val / 100) * 100); }
   constructor(private produitService: ProduitService, private clientsService: ClientsService, private cdr: ChangeDetectorRef, private dashboardService: DashboardService) {
     this.loadStats();
   }
@@ -57,6 +63,17 @@ lineChartOptions: any = {
 };
 
 updateStats(data: any): void {
+  this.summary = {
+    produits: data.produits || 0,
+    clients: data.clients || 0,
+    factures: data.factures || 0,
+    proformas: data.proformas || 0,
+    poidsTotal: data.stockTotal || 0,
+    valeurStock: data.valeurStock || 0
+  };
+
+  const hour = new Date().getHours();
+  this.greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   // ✅ tes stats (déjà correct)
   this.stats = [

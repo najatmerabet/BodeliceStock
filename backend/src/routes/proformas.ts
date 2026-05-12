@@ -23,10 +23,12 @@ function calcLigne(q: number, prix: number, remise: number, tva: number) {
 // GET /api/proformas
 router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('[GET] /api/proformas - Debut requete');
     const list = await prisma.factureProforma.findMany({
       include: { client: true },
       orderBy: { date: 'desc' },
     });
+    console.log('[GET] /api/proformas - Trouve:', list.length, 'proformas');
     res.json(list);
   } catch (e) { next(e); }
 });
@@ -35,6 +37,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
+    console.log('[GET] /api/proformas/:id - id:', id);
     const p = await prisma.factureProforma.findUnique({
       where: { id },
       include: {
@@ -44,6 +47,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         facture: true,
       },
     });
+    console.log('[GET] /api/proformas/:id - trouve:', p ? p.numero : 'null', '- BLs:', p?.bonsLivraison?.length || 0);
     if (!p) { res.status(404).json({ error: 'Proforma non trouvée' }); return; }
     res.json(p);
   } catch (e) { next(e); }
@@ -85,6 +89,8 @@ router.post('/from-bls', async (req: Request, res: Response, next: NextFunction)
           prix,
           remise: 0,
           tva,
+          nbUnites: l.nbUnites || null,
+          poidsUnitaire: l.poidsUnitaire || null,
           ...calc,
         });
       }
