@@ -78,7 +78,7 @@ const revenusParMois = Object.keys(revenusMap).map(mois => ({
   mois,
   montant: revenusMap[mois]
 }));
-const livraisonsParStatut = await prisma.bonLivraison.groupBy({
+const livraisonsParStatut = await prisma.facture.groupBy({
   by: ['statut'],
   _count: true
 });

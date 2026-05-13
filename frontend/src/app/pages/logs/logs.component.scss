@@ -290,10 +290,12 @@ $radius-badge: 6px;
   color: #9ca3af;
 
   .material-symbols-outlined {
-    font-size: 36px;
-    display: block;
-    margin-bottom: 8px;
-  }
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
 
   p {
     font-size: 14px;
