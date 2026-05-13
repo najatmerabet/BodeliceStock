@@ -34,6 +34,7 @@ app.use('/api/proformas', proformasRouter);
 app.use('/api/avoirs', avoirsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/logs', logs);
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: '🏭 ProdMeat Stock API is running' });

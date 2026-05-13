@@ -20,20 +20,55 @@ router.post('/login', async (req , res)=>{
         if(!isMatch){
             return res.status(401).json({message: 'Email ou mot de passe incorrect'});
         }
+const accessToken = Jwt.sign(
+  { userId: user.id },
+  JWT_SECRET,
+  { expiresIn: '1h' }
+);
 
-        const token = Jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ 
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name
-            }
-        });
+const refreshToken = Jwt.sign(
+  { userId: user.id },
+  JWT_SECRET,
+  { expiresIn: '7d' }
+);
+
+res.json({ 
+  accessToken,
+  refreshToken,
+  user: {
+    id: user.id,
+    email: user.email,
+    name: user.name
+  }
+});
     } catch (error) {
         res.status(500).json({ message: 'Erreur serveur' });
     }
 })
+
+router.post('/refresh', (req, res) => {
+     console.log("🔥 REFRESH CALLED");
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token manquant' });
+  }
+
+  try {
+    const decoded = Jwt.verify(refreshToken, JWT_SECRET) as { userId: number };
+
+    const newAccessToken = Jwt.sign(
+      { userId: decoded.userId },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({ accessToken: newAccessToken });
+
+  } catch (err) {
+    return res.status(403).json({ message: 'Refresh token invalide' });
+  }
+});
 
 router.get('/me', async (req, res) => {
     try {
