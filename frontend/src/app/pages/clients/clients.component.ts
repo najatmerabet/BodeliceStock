@@ -16,12 +16,31 @@ export class ClientsComponent implements OnInit {
   searchQuery = '';
   message = '';
   messageType: 'success' | 'error' = 'success';
+  toast = '';
+  toastType: 'ok' | 'err' = 'ok';
   showModal = false;
   editMode = false;
   form: Client = { nom: '',ice: '' ,adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
   selectedClient: Client | null = null;
   deleteTarget: Client | null = null;
   deleting = false;
+
+  // Pagination
+  pageSize = 10;
+  currentPage = 1;
+  get totalPages(): number { return Math.ceil(this.filteredClients.length / this.pageSize); }
+  get pagedClients(): Client[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredClients.slice(start, start + this.pageSize);
+  }
+  prevPage(): void { if (this.currentPage > 1) this.currentPage--; }
+  nextPage(): void { if (this.currentPage < this.totalPages) this.currentPage++; }
+  goToPage(n: number): void { if (n >= 1 && n <= this.totalPages) this.currentPage = n; }
+  get pages(): number[] {
+    const arr: number[] = [];
+    for (let i = 1; i <= this.totalPages; i++) arr.push(i);
+    return arr;
+  }
 
   constructor(private clientsService: ClientsService, private cdr: ChangeDetectorRef) {}
 
@@ -60,6 +79,17 @@ getUniqueCities(): number {
   return cities.size;
 }
 
+getUniqueVilles(): number {
+  const villes = new Set(this.clients.filter(c => c.ville).map(c => c.ville));
+  return villes.size;
+}
+
+private showToast(msg: string, type: 'ok' | 'err'): void {
+  this.toast = msg;
+  this.toastType = type;
+  setTimeout(() => { this.toast = ''; this.cdr.detectChanges(); }, 3500);
+}
+
 private showMessage(msg: string, type: 'success' | 'error'): void {
   this.message = msg;
   this.messageType = type;
@@ -78,16 +108,17 @@ private showMessage(msg: string, type: 'success' | 'error'): void {
       console.log('==========>Client mis à jour :',this.form);
        this.clientsService.updateClient(this.selectedClient.id!, this.form).subscribe({
       
-        next: (client) => {
+next: (client) => {
           const index = this.clients.findIndex(c => c.id === client.id);
           if (index !== -1) {
             this.clients[index] = client;
             this.applyFilter();
             this.showModal = false;
+            this.showToast('Client modifié avec succès', 'ok');
             this.cdr.detectChanges();
           }
            console.log('==========>Client mis à jour :', client);
-        },
+         },
         error: (err) => console.error('Erreur:', err)
       });
       return;
@@ -98,6 +129,7 @@ private showMessage(msg: string, type: 'success' | 'error'): void {
         this.clients.push(client);
         this.applyFilter();
         this.showModal = false;
+        this.showToast('Client ajouté avec succès', 'ok');
         this.cdr.detectChanges();
       },
       
@@ -106,6 +138,7 @@ private showMessage(msg: string, type: 'success' | 'error'): void {
     });
   }
   }
+  
   closeModal(): void {
     this.showModal = false;
    }
@@ -128,6 +161,7 @@ executeDelete(): void {
     next: () => {
       this.clients = this.clients.filter(c => c.id !== this.deleteTarget!.id);
       this.applyFilter();
+      this.showToast('Client supprimé', 'ok');
       this.cdr.detectChanges();
       
       setTimeout(() => {

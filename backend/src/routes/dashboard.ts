@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
-
+import { authMiddleware } from './auth.middleware';
 const router = Router();
 
-router.get('/summary', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/summary', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const [produits, clients, blCount, factureCount, proformaCount, avoirCount] = await Promise.all([
       prisma.produit.findMany({ orderBy: { quantite: 'asc' } }),
@@ -21,7 +21,12 @@ router.get('/summary', async (_req: Request, res: Response, next: NextFunction) 
     const valeurStock = produits.reduce((acc, p) => {
       return acc + (Number(p.quantite) * Number(p.poidsUnitaire) * Number(p.prixUnitaire));
     }, 0);
-
+    const rawPaiements = await prisma.paiement.findMany({
+  select: {
+    montant: true,
+    date: true
+  }
+});
     // Poids total en kg
     const poidsTotal = produits.reduce((acc, p) => {
       return acc + (Number(p.quantite) * Number(p.poidsUnitaire));
@@ -53,6 +58,31 @@ router.get('/summary', async (_req: Request, res: Response, next: NextFunction) 
         unite: p.unite,
       }));
 
+      const rawRevenus = await prisma.facture.findMany({
+  select: {
+    total: true,
+    date: true
+  }
+});
+
+const revenusMap: Record<string, number> = {};
+
+rawRevenus.forEach(f => {
+  const mois = new Date(f.date).toLocaleString('fr-FR', { month: 'short' });
+
+  if (!revenusMap[mois]) revenusMap[mois] = 0;
+  revenusMap[mois] += Number(f.total);
+});
+
+const revenusParMois = Object.keys(revenusMap).map(mois => ({
+  mois,
+  montant: revenusMap[mois]
+}));
+const livraisonsParStatut = await prisma.bonLivraison.groupBy({
+  by: ['statut'],
+  _count: true
+});
+
     // Répartition par catégorie
     const categories: Record<string, { count: number; valeur: number }> = {};
     produits.forEach(p => {
@@ -75,10 +105,13 @@ router.get('/summary', async (_req: Request, res: Response, next: NextFunction) 
       topProduits,
       alertes,
       categories,
+      revenusParMois:rawPaiements,
+      livraisonsParStatut: livraisonsParStatut,
     });
   } catch (error) {
     next(error);
   }
 });
+
 
 export default router;

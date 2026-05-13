@@ -1,10 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET as string; // Assurez-vous que cette variable d'environnement est définie
+import { Request, Response, NextFunction } from 'express';
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -14,10 +11,17 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-    (req as any).user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    console.log("Decoded Token:", decoded);
+    const userId = decoded.userId ?? decoded.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Token invalide: userId manquant' });
+    }
+
+    (req as any).user = { userId };
     next();
-  } catch {
+  } catch (err) {
     return res.status(401).json({ error: 'Token invalide' });
   }
 };

@@ -6,6 +6,7 @@ const router = Router();
 
 // GET /api/clients — Liste tous les clients
 router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
+  console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   try {
     const clients = await prisma.client.findMany({
       orderBy: { nom: 'asc' },
@@ -37,32 +38,33 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 });
 
 // POST /api/clients — Créer un client
-router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
+  console.log("🔴 ROUTE POST CLIENTS ATTEINTE");
+  console.log("req.user:", (req as any).user);
+  try{
     const { nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
-    if (!nom) {
-      res.status(400).json({ error: 'nom est obligatoire' });
-      return;
-    }
     const client = await prisma.client.create({
       data: { nom, ice, telephone, adresse, email, ville, codepostal },
     });
+    try{
     await createLog({
       action: 'CREATE',
       entity: 'Client',
       entityId: client.id,
       description: `Client créé: ${client.nom}`,
-      userId: (req as any).user.id,
-    });
+      userId: (req as any).user?.userId,
+    })}catch(logError){
+      console.error("Erreur lors de la création du log:", logError);
+    }
     res.status(201).json(client);
   } catch (error) {
-    next(error);
+    res.status(400).json({ error: 'Erreur lors de la création du client' });
   }
 });
-
 // PUT /api/clients/:id — Modifier un client
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log("🔵 ROUTE PUT CLIENTS ATTEINTE");
     const { nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
     const client = await prisma.client.update({
       where: { id: parseInt(String(req.params.id)) },
@@ -73,7 +75,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
       entity: 'Client',
       entityId: client.id,
       description: `Client mis à jour: ${client.nom}`,
-      userId: (req as any).user.id,
+      userId: (req as any).user?.userId,
     });
     res.json(client);
   } catch (error: any) {
@@ -84,6 +86,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
     next(error);
   }
 });
+
 
 // DELETE /api/clients/:id — Supprimer un client
 router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
@@ -96,7 +99,7 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: 
       entity: 'Client',
       entityId: parseInt(String(req.params.id)),
       description: `Client supprimé: ${req.params.id}`,
-      userId: (req as any).user.id,
+      userId: (req as any).user?.userId,
     });
     res.status(204).send();
   } catch (error: any) {

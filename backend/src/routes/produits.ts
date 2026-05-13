@@ -3,6 +3,7 @@ import prisma from '../prisma';
 import multer from 'multer';
 import * as xlsx from 'xlsx';
 import { authMiddleware } from './auth.middleware';
+import { createLog } from '../services/log.service';
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -38,6 +39,13 @@ router.post('/import', authMiddleware, upload.single('file'), async (req: Reques
             quantite: parseFloat(String(row.quantite || 0)),
             prixUnitaire: parseFloat(String(row.prixUnitaire)),
           }
+        });
+        await createLog({
+          action: 'CREATE',
+          entity: 'Produit',
+          entityId: produit.id,
+          description: `Produit créé: ${produit.nom}`,
+          userId: (req as any).user?.userId,
         });
         results.push(produit);
       }
@@ -78,6 +86,13 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
         prixUnitaire,
         tva: tva !== undefined ? Number(tva) : 0,
       },
+    });
+    await createLog({
+      action: 'CREATE',
+      entity: 'Produit',
+      entityId: produit.id,
+      description: `Produit créé: ${produit.nom}`,
+      userId: (req as any).user?.userId,
     });
     res.status(201).json(produit);
   } catch (error: any) {
@@ -128,6 +143,14 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
       return updated;
     });
 
+    await createLog({
+      action: 'UPDATE',
+      entity: 'Produit',
+      entityId: produit.id,
+      description: `Produit mis à jour: ${produit.nom}`,
+      userId: (req as any).user?.userId,
+    });
+
     res.json(produit);
   } catch (error: any) {
     if (error.code === 'P2025') { res.status(404).json({ error: 'Produit non trouvé' }); return; }
@@ -152,6 +175,13 @@ router.get('/:id/mouvements', async (req: Request, res: Response, next: NextFunc
 router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await prisma.produit.delete({ where: { id: parseInt(String(req.params.id)) } });
+      await createLog({
+      action: 'DELETE',
+      entity: 'Produit',
+      entityId: parseInt(String(req.params.id)),
+      description: `Produit supprimé: ${req.params.id}`,
+      userId: (req as any).user?.userId,
+    });
     res.status(204).send();
   } catch (error: any) {
     if (error.code === 'P2025') { res.status(404).json({ error: 'Produit non trouvé' }); return; }

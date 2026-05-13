@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import authRouter from './routes/auth';
-
+import logs from './routes/logs';
 import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
 import blRouter from './routes/bons-livraison';
@@ -33,7 +33,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/proformas', proformasRouter);
 app.use('/api/avoirs', avoirsRouter);
 app.use('/api/dashboard', dashboardRouter);
-
+app.use('/api/logs', logs);
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: '🏭 ProdMeat Stock API is running' });
