@@ -16,16 +16,18 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   login(credentials: { email: string; password: string }) {
-    return this.http.post<{ token: string; user: User }>(`${this.apiUrl}/login`, credentials).pipe(
+    return this.http.post<{ accessToken: string; refreshToken: string; user: User }>(`${this.apiUrl}/login`, credentials).pipe(
       tap(res => { 
-        localStorage.setItem('token', res.token); 
+        localStorage.setItem('accessToken', res.accessToken); 
+        localStorage.setItem('refreshToken', res.refreshToken);
         localStorage.setItem('user', JSON.stringify(res.user));
       })
     );
   }
 
   logout() { 
-     localStorage.removeItem('token');
+     localStorage.removeItem('accessToken');
+     localStorage.removeItem('refreshToken');
      localStorage.removeItem('user');
   }
 
@@ -33,14 +35,24 @@ export class AuthService {
     localStorage.setItem('token', token);
   }
 
-  getToken() {
-    return localStorage.getItem('token');
-  }
+ getToken() {
+  return localStorage.getItem('accessToken');
+}
+
+getRefreshToken() {
+  return localStorage.getItem('refreshToken');
+}
 
   getUser(): User | null {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   }
+  refreshToken(refreshToken: string) {
+  return this.http.post<{ accessToken: string }>(
+    '/api/auth/refresh',
+    { refreshToken }
+  );
+}
 
   fetchCurrentUser() {
     return this.http.get<User>(`${this.apiUrl}/me`).pipe(
@@ -55,4 +67,8 @@ export class AuthService {
   isLoggedIn(): boolean {
     return this.isAuthenticated();
   }
+
+  saveAccessToken(token: string) {
+  localStorage.setItem('accessToken', token);
+}
 }
