@@ -5,7 +5,7 @@ import  Jwt  from 'jsonwebtoken';
 
 const router =Router();
 
-const JWT_SECRET = process.env.JWT_SECRET as string; // Remplacez par une clé secrète plus sécurisée en production
+const JWT_SECRET = process.env.JWT_SECRET || 'prodmeatstocksecret2024';
 
 router.post('/login', async (req , res)=>{
     try{

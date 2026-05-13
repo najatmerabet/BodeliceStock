@@ -1,15 +1,18 @@
 <div class="login-container">
   <div class="glass-card">
-    <div class="header">
-      
-    
-      <h1>Gestion de stock intelligente</h1>
+    <div class="login-header">
+      <div class="logo">
+        <img src="assets/logo.png" alt="Bôdélice Stock" class="logo-img">
+      </div>
+      <h1>Bôdélice Stock</h1>
+      <p class="subtitle">Gestion de stock intelligente</p>
     </div>
 
     <form (submit)="login()">
       <div class="input-wrapper">
         <label for="email">Email</label>
         <div class="input-field">
+          <span class="material-symbols-rounded">mail</span>
           <input type="email" id="email" [(ngModel)]="email" name="email" placeholder="nom@exemple.com" required>
         </div>
       </div>
@@ -17,16 +20,24 @@
       <div class="input-wrapper">
         <label for="password">Mot de passe</label>
         <div class="input-field">
+          <span class="material-symbols-rounded">lock</span>
           <input type="password" id="password" [(ngModel)]="password" name="password" placeholder="••••••••" required>
         </div>
       </div>
 
-      <button type="submit" class="primary-button">
-        Se connecter
-        <span class="arrow">→</span>
+      <div class="error-msg" *ngIf="error">{{ error }}</div>
+
+      <button type="submit" class="primary-button" [disabled]="loading">
+        <span *ngIf="!loading">Se connecter</span>
+        <span *ngIf="loading">Connexion...</span>
+        <span class="material-symbols-rounded" *ngIf="!loading">arrow_forward</span>
       </button>
     </form>
 
-    
+    <div class="login-footer">
+      <p>© 2024 Bôdélice Stock - Tous droits réservés</p>
+    </div>
   </div>
+
+  <div class="bg-pattern"></div>
 </div>

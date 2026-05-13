@@ -15,18 +15,22 @@ import { Router } from '@angular/router';
 export class Auth {
   email = '';
   password = '';
-  errorMessage = '';
+  error = '';
+  loading = false;
 
   constructor(private authService: AuthService, private router: Router) {}
 
   login(): void {
+    this.loading = true;
+    this.error = '';
     this.authService.login({ email: this.email, password: this.password }).subscribe({
       next: () => {
         this.router.navigate(['/dashboard']);
+        this.loading = false;
       },
       error: (err) => {
-        console.error('Login error:', err);
-        this.errorMessage = 'Email ou mot de passe incorrect';
+        this.loading = false;
+        this.error = 'Email ou mot de passe incorrect';
       }
     });
   }
