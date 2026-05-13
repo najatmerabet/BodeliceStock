@@ -18,10 +18,7 @@ export class DashboardComponent implements OnInit {
   today = new Date();
   stats: any[] = [];
 
-  donutLegend = [
-    { label: 'Facturées',  value: 72, color: '#639922' },
-    { label: 'À Facturer', value: 18, color: '#BA7517' },
-  ];
+
 
   // ── Line chart ───────────────────────────────────────────────────────────
   lineChartData: ChartData<'line'> = {
@@ -70,16 +67,16 @@ export class DashboardComponent implements OnInit {
 
   // ── Donut chart ──────────────────────────────────────────────────────────
   donutChartData: ChartData<'doughnut'> = {
-    labels: ['Facturées', 'À Facturer'],
+    labels: ['payée', 'impayée'],
     datasets: [{
-      data: [72, 18],
+      data: [],
       backgroundColor: ['#639922', '#BA7517'],
       borderWidth: 3,
       borderColor: '#fff',
       hoverOffset: 6,
     }],
   };
-
+  donutLegend: any[] = [];
   donutChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -169,28 +166,56 @@ export class DashboardComponent implements OnInit {
       };
     }
 
-    if (data.livraisonsParStatut?.length) {
-      const labels  = data.livraisonsParStatut.map((x: any) => x.statut);
-      const values  = data.livraisonsParStatut.map((x: any) => x._count);
-      const total   = values.reduce((a: number, b: number) => a + b, 0);
-      const pct     = (v: number) => total ? Math.round((v / total) * 100) : 0;
+  if (data.livraisonsParStatut?.length) {
+  const labels = data.livraisonsParStatut.map((x: any) => x.statut);
+  const values = data.livraisonsParStatut.map((x: any) => x._count);
+  const total = values.reduce((a: number, b: number) => a + b, 0);
+  const pct = (v: number) => total ? Math.round((v / total) * 100) : 0;
+  const normalize = (s: string) =>
+  s.normalize('NFD')
+   .replace(/[\u0300-\u036f]/g, '')
+   .trim()
+   .toUpperCase();
+  const colorMap: any = {
+  'PAYEE': '#639922',
+  'IMPAYEE': '#BA7517',
+};
 
-      this.donutLegend = labels.map((label: string, i: number) => ({
-        label,
-        value: pct(values[i]),
-        color: i === 0 ? '#639922' : '#BA7517',
-      }));
+this.donutLegend = labels.map((label: string, i: number) => {
+  const key = normalize(label);
 
-      this.donutChartData = {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: ['#639922', '#BA7517'],
-          borderWidth: 3,
-          borderColor: '#fff',
-        }],
-      };
-    }
+  return {
+    label,
+    value: pct(values[i]),
+    color: colorMap[key] || '#ccc',
+  };
+});
+
+this.donutChartData = {
+  labels,
+  datasets: [{
+    data: values,
+    backgroundColor: labels.map((l: string) => {
+      const key = normalize(l);
+      return colorMap[key] || '#ccc';
+    }),
+    borderWidth: 3,
+    borderColor: '#fff',
+  }],
+};
+} else {
+  // ✅ RESET propre
+  this.donutLegend = [];
+  this.donutChartData = {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderWidth: 3,
+      borderColor: '#fff',
+    }],
+  };
+}
 
     if (data.topProduits?.length) {
       this.barChartData = {

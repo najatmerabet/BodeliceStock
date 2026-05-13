@@ -56,6 +56,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 
 // POST /api/proformas/from-bls — Créer proforma depuis BLs
 router.post('/from-bls', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  console.log('[POST] /api/proformas/from-bls - body:', req.body);
   try {
     const { blIds } = req.body;
     if (!Array.isArray(blIds) || blIds.length === 0) {
@@ -77,25 +78,37 @@ router.post('/from-bls', authMiddleware, async (req: Request, res: Response, nex
     }
 
     // Construire les lignes proforma depuis les lignes BL (remise=0 par défaut)
-    const lignesData: any[] = [];
-    for (const bl of bls) {
-      for (const l of bl.lignes) {
-        const q = Number(l.quantite);
-        const prix = Number(l.prix);
-        const tva = Number(l.produit.tva || 0);
-        const calc = calcLigne(q, prix, 0, tva);
-        lignesData.push({
-          produitId: l.produitId,
-          quantite: q,
-          prix,
-          remise: 0,
-          tva,
-          nbUnites: l.nbUnites || null,
-          poidsUnitaire: l.poidsUnitaire || null,
-          ...calc,
-        });
-      }
+ const lignesData: any[] = [];
+
+for (const bl of bls) {
+  for (const l of bl.lignes) {
+
+    if (!l.produit) {
+      throw new Error('Produit manquant sur une ligne BL');
     }
+
+    const q = Number(l.quantite ?? 0);
+    const prix = Number(l.prix ?? 0);
+    const tva = Number(l.produit.tva ?? 0);
+
+    const calc = calcLigne(q, prix, 0, tva);
+
+    if (!calc) {
+      throw new Error('calcLigne a retourné undefined');
+    }
+
+    lignesData.push({
+      produitId: l.produitId,
+      quantite: q,
+      prix,
+      remise: 0,
+      tva,
+      nbUnites: l.nbUnites ?? null,
+      poidsUnitaire: l.poidsUnitaire ?? null,
+      ...calc,
+    });
+  }
+}
 
     const totalHT = lignesData.reduce((s, l) => s + l.totalAvantRemise, 0);
     const totalRemise = lignesData.reduce((s, l) => s + (l.totalAvantRemise - l.totalApresRemise), 0);
