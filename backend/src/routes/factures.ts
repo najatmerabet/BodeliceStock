@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
-
+import { createLog } from '../services/log.service';
+import { authMiddleware } from './auth.middleware';
 const router = Router();
 
 // Génère le prochain numéro facture : FA-0001, FA-0002...
@@ -13,7 +14,7 @@ async function generateNumeroFacture(): Promise<string> {
 }
 
 // GET /api/factures — Liste toutes les factures
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const factures = await prisma.facture.findMany({
       include: { client: true },
@@ -26,7 +27,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/factures/:id — Une facture avec ses BLs et produits
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const facture = await prisma.facture.findUnique({
@@ -47,6 +48,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       res.status(404).json({ error: 'Facture non trouvée' });
       return;
     }
+
     res.json(facture);
   } catch (error) {
     next(error);
@@ -54,7 +56,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST /api/factures/generate-from-bls — Créer une facture à partir de plusieurs BLs
-router.post('/generate-from-bls', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/generate-from-bls', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { blIds } = req.body;
     if (!Array.isArray(blIds) || blIds.length === 0) {
@@ -132,7 +134,13 @@ router.post('/generate-from-bls', async (req: Request, res: Response, next: Next
 
       return newFacture;
     });
-
+    await createLog({
+      action: 'CREATE',
+      entity: 'Facture',
+      entityId: facture.id,
+      description: `Facture créée à partir de BLs: ${facture.numero}`,
+      userId: (req as any).user?.userId,
+    });
     res.status(201).json(facture);
   } catch (error) {
     next(error);
@@ -140,7 +148,7 @@ router.post('/generate-from-bls', async (req: Request, res: Response, next: Next
 });
 
 // POST /api/factures — Créer une facture manuelle (legacy or simple)
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { clientId, total, paye } = req.body;
     if (!clientId || total === undefined) {
@@ -166,6 +174,13 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       },
       include: { client: true },
     });
+    await createLog({
+      action: 'CREATE',
+      entity: 'Facture',
+      entityId: facture.id,
+      description: `Facture créée: ${facture.numero}`,
+      userId: (req as any).user?.userId,
+    });
     res.status(201).json(facture);
   } catch (error) {
     next(error);
@@ -173,7 +188,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // PUT /api/factures/:id/payer — Ajouter un paiement
-router.put('/:id/payer', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/payer', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { montant, methode, remarque } = req.body;
     if (!montant || Number(montant) <= 0) {
@@ -235,6 +250,13 @@ router.put('/:id/payer', async (req: Request, res: Response, next: NextFunction)
         bonsLivraison: { include: { lignes: { include: { produit: true } } } },
       },
     });
+      await createLog({
+      action: 'UPDATE',
+      entity: 'Facture',
+      entityId: parseInt(String(req.params.id)),
+      description: `Paiement de facture ${facture?.numero} pour ${montant} MAD via ${methode || 'ESPECE'} - Statut: ${newStatut} - Reste: ${Math.max(0, newReste)} MAD`,
+      userId: (req as any).user?.userId,
+    });
     res.json(full);
   } catch (error) {
     next(error);
@@ -242,10 +264,10 @@ router.put('/:id/payer', async (req: Request, res: Response, next: NextFunction)
 });
 
 // DELETE /api/factures/:id — Supprimer une facture + remettre les BLs en "A FACTURER"
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
-    
+    const facture = await prisma.facture.findUnique({ where: { id } });
     await prisma.$transaction(async (tx) => {
       // Remettre les BLs à zéro
       await tx.bonLivraison.updateMany({
@@ -259,6 +281,14 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
       await tx.facture.delete({
         where: { id },
       });
+    });
+
+    await createLog({
+      action: 'DELETE',
+      entity: 'Facture',
+      entityId: id,
+      description: `Facture supprimée: ${facture?.numero }`,
+      userId: (req as any).user?.userId,
     });
 
     res.status(204).send();

@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
-
+import { createLog } from '../services/log.service';
+import { authMiddleware } from './auth.middleware';
+import { getBonLivraisonChanges } from '../utils/diffBl';
 const router = Router();
 
 async function generateNumeroBL(): Promise<string> {
@@ -10,7 +12,7 @@ async function generateNumeroBL(): Promise<string> {
 }
 
 // GET / — Liste tous les BLs
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const bls = await prisma.bonLivraison.findMany({
       include: { client: true, lignes: { include: { produit: true } } },
@@ -21,7 +23,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /:id — Un BL avec ses lignes
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const bl = await prisma.bonLivraison.findUnique({
       where: { id: parseInt(String(req.params.id)) },
@@ -33,7 +35,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST / — Créer un BL avec ses lignes + déduction stock
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { clientId, lignes } = req.body;
     console.log('Creating BL for client:', clientId, 'with lignes:', lignes);
@@ -87,51 +89,58 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         total: totalLigne 
       };
     });
+    
+    const newBl = await prisma.$transaction(async (tx) => {
+  const bl = await tx.bonLivraison.create({
+    data: {
+      numero,
+      clientId: Number(clientId),
+      total: totalBL,
+      lignes: { create: lignesData },
+    },
+    include: { client: true, lignes: { include: { produit: true } } },
+  });
 
-    const bl = await prisma.$transaction(async (tx) => {
-      // 1. Créer le BL
-      const newBl = await tx.bonLivraison.create({
-        data: {
-          numero, 
-          clientId: Number(clientId), 
-          total: totalBL,
-          lignes: { create: lignesData },
-        },
-        include: { client: true, lignes: { include: { produit: true } } },
-      });
+  for (const l of lignesData) {
+    const prod = await tx.produit.findUnique({ where: { id: l.produitId } });
 
-      // 2. Déduire le stock
-      for (const l of lignesData) {
-        const prod = await tx.produit.findUnique({ where: { id: l.produitId } });
-        const ancienneQte = Number(prod?.quantite || 0);
-        const nouvelleQte = ancienneQte - l.nbUnites;
+    const ancienneQte = Number(prod?.quantite || 0);
+    const nouvelleQte = ancienneQte - l.nbUnites;
 
-        await tx.produit.update({
-          where: { id: l.produitId },
-          data: { quantite: nouvelleQte },
-        });
-
-        await tx.stockMouvement.create({
-          data: {
-            produitId: l.produitId,
-            type: 'BL_CREATION',
-            ancienneQte,
-            nouvelleQte,
-            delta: -l.nbUnites,
-            motif: `Sortie BL ${newBl.numero} (${l.nbUnites} ${prod?.unite}s)`,
-          },
-        });
-      }
-
-      return newBl;
+    await tx.produit.update({
+      where: { id: l.produitId },
+      data: { quantite: nouvelleQte },
     });
 
-    res.status(201).json(bl);
+    await tx.stockMouvement.create({
+      data: {
+        produitId: l.produitId,
+        type: 'BL_CREATION',
+        ancienneQte,
+        nouvelleQte,
+        delta: -l.nbUnites,
+        motif: `Sortie BL ${bl.numero}`,
+      },
+    });
+  }
+
+  return bl;
+});
+
+await createLog({
+  action: 'CREATE',
+  entity: 'BonLivraison',
+  entityId: newBl.id,
+  description: `Bon de livraison créé: ${newBl.numero}`,
+  userId: (req as any).user?.userId,
+});
+   
+    res.status(201).json(newBl);
   } catch (error) { next(error); }
 });
 
 // PUT /:id — Modifier un BL (client + lignes + ajustement stock)
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const { clientId, lignes } = req.body;
@@ -142,7 +151,9 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
     const existingBl = await prisma.bonLivraison.findUnique({
       where: { id },
-      include: { lignes: true },
+      include: { lignes: {
+          include: { produit: true }
+      } },
     });
     if (!existingBl) { res.status(404).json({ error: 'BL non trouvé' }); return; }
 
@@ -169,6 +180,14 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
       totalBL += totalLigne;
       return { produitId: Number(l.produitId), nbUnites: n, poidsUnitaire: pu, quantite: q, prix: pr, total: totalLigne };
     });
+
+    const produits= await prisma.produit.findMany({
+      where: {
+        id: { in: lignesData.map(l => l.produitId) }
+      }
+    });
+    const produitMap = new Map<number, string>();
+    produits.forEach(p => produitMap.set(p.id, p.nom));
 
     // Vérifier stock (restaurer ancien d'abord virtuellement)
     const stockMap = new Map<number, number>();
@@ -217,12 +236,23 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
       return bl;
     });
+    const changes = getBonLivraisonChanges(existingBl, Number(clientId), lignesData, produitMap);
+    const description =  changes.length > 0
+    ? `Modification BL ${updated.numero}:\n` + changes.join(" | ")
+    : `BL ${updated.numero} mis à jour sans changement détecté`;
+    await createLog({
+      action: 'UPDATE',
+      entity: 'BonLivraison',
+      entityId: updated.id,
+      description: description,
+      userId: (req as any).user?.userId,
+    });
 
     res.json(updated);
   } catch (error) { next(error); }
 });
 
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const bl = await prisma.bonLivraison.findUnique({
@@ -256,6 +286,14 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
         });
       }
       await tx.bonLivraison.delete({ where: { id } });
+    });
+
+    await createLog({
+      action: 'DELETE',
+      entity: 'BonLivraison',
+      entityId: parseInt(String(req.params.id)),
+      description: `Suppression BL ${bl.numero} - Client ${bl.clientId} - ${bl.lignes.length} lignes`,
+      userId: (req as any).user?.userId,
     });
 
     res.status(204).send();

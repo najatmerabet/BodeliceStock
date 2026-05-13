@@ -21,5 +21,6 @@ export class SidebarComponent {
     { icon: 'description', label: 'Proformas', route: '/proformas' },
     { icon: 'receipt_long', label: 'Factures', route: '/factures' },
     { icon: 'assignment_return', label: 'Avoirs', route: '/avoirs' },
+    { icon: 'history', label: 'Logs', route: '/logs' },
   ];
 }

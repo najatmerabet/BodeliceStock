@@ -138,6 +138,7 @@ next: (client) => {
     });
   }
   }
+  
   closeModal(): void {
     this.showModal = false;
    }

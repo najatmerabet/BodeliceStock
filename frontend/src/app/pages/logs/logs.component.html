@@ -1,0 +1,81 @@
+<div class="logs-container">
+
+  <!-- Header -->
+  <div class="logs-header">
+    <div>
+      <h2>Activités récentes</h2>
+      <p>{{ filteredLogs.length }} entrées</p>
+    </div>
+
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        type="text"
+        placeholder="Rechercher..."
+        class="search-input"
+        [(ngModel)]="searchQuery"
+        (input)="applyFilters()"
+      />
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button
+      *ngFor="let f of filterOptions"
+      class="filter"
+      [class.active]="activeFilter === f.value"
+      [ngClass]="f.value.toLowerCase()"
+      (click)="setFilter(f.value)"
+    >
+      {{ f.label }}
+    </button>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div
+      *ngFor="let log of filteredLogs; trackBy: trackByLog"
+      class="timeline-item"
+      [ngClass]="log.action"
+    >
+      <div class="timeline-marker"></div>
+
+      <div class="log-card">
+
+        <!-- Avatar -->
+        <div class="avatar">
+          {{ log.user.email[0] | uppercase }}
+        </div>
+
+        <!-- Info utilisateur -->
+        <div class="user-info">
+          <div class="email">{{ log.user.email }}</div>
+          <div class="time">{{ log.createdAt | date:'HH:mm' }}</div>
+        </div>
+
+        <!-- Description -->
+        <div class="center">
+          <div class="entity-row">
+            Sur&nbsp;
+            <span class="entity-badge">{{ log.entity }}</span>
+          </div>
+          <div class="description">{{ log.description }}</div>
+        </div>
+
+        <!-- Badge action -->
+        <div class="right">
+          <span class="action-badge">{{ log.action }}</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="filteredLogs.length === 0">
+      <span class="material-symbols-outlined">manage_search</span>
+      <p>Aucune activité trouvée</p>
+    </div>
+  </div>
+
+</div>

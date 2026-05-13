@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
-
+import { createLog } from '../services/log.service';
+import { authMiddleware } from './auth.middleware';
 const router = Router();
 
 async function generateNumeroAvoir(): Promise<string> {
@@ -10,7 +11,7 @@ async function generateNumeroAvoir(): Promise<string> {
 }
 
 // GET /api/avoirs
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const list = await prisma.factureAvoir.findMany({
       include: { facture: { include: { client: true } } },
@@ -21,7 +22,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/avoirs/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const avoir = await prisma.factureAvoir.findUnique({
@@ -37,7 +38,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST /api/avoirs — Créer un avoir (retours produits)
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { factureId, motif, lignes } = req.body;
     if (!factureId || !Array.isArray(lignes) || lignes.length === 0) {
@@ -125,12 +126,20 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return av;
     });
 
+    await createLog({
+      action: 'CREATE',
+      entity: 'Avoir',
+      entityId: avoir.id,
+      description: `Avoir créé: ${avoir.numero} pour facture ${avoir.facture.numero} `,
+      userId: (req as any).user?.userId,
+    });
+
     res.status(201).json(avoir);
   } catch (e) { next(e); }
 });
 
 // DELETE /api/avoirs/:id — Supprimer avoir + annuler le stock/paiement
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const avoir = await prisma.factureAvoir.findUnique({
@@ -181,7 +190,13 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
 
       await tx.factureAvoir.delete({ where: { id } });
     });
-
+     await createLog({
+      action: 'DELETE',
+      entity: 'Avoir',
+      entityId: id,
+      description: `Avoir supprimé: ${avoir.numero} pour facture ${facture?.numero}`,
+      userId: (req as any).user?.userId,
+    });
     res.status(204).send();
   } catch (e) { next(e); }
 });

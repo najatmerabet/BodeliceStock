@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
-
+import { createLog } from '../services/log.service';
+import { authMiddleware } from './auth.middleware';
 const router = Router();
 
 // ── Génère le numéro proforma ──
@@ -21,7 +22,7 @@ function calcLigne(q: number, prix: number, remise: number, tva: number) {
 }
 
 // GET /api/proformas
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     console.log('[GET] /api/proformas - Debut requete');
     const list = await prisma.factureProforma.findMany({
@@ -34,7 +35,7 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/proformas/:id
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     console.log('[GET] /api/proformas/:id - id:', id);
@@ -54,7 +55,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST /api/proformas/from-bls — Créer proforma depuis BLs
-router.post('/from-bls', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/from-bls', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { blIds } = req.body;
     if (!Array.isArray(blIds) || blIds.length === 0) {
@@ -126,13 +127,19 @@ router.post('/from-bls', async (req: Request, res: Response, next: NextFunction)
 
       return fp;
     });
-
+    await createLog({
+      action: 'CREATE',
+      entity: 'Proforma',
+      entityId: proforma.id,
+      description: `Proforma créée depuis BLs: ${bls.map(b => b.numero).join(', ')}`,
+      userId: (req as any).user?.userId,
+    });
     res.status(201).json(proforma);
   } catch (e) { next(e); }
 });
 
 // PUT /api/proformas/:id/lignes — Modifier les remises/TVA des lignes
-router.put('/:id/lignes', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/lignes', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const { lignes } = req.body; // [{ id, remise }]
@@ -171,12 +178,20 @@ router.put('/:id/lignes', async (req: Request, res: Response, next: NextFunction
       include: { client: true, lignes: { include: { produit: true } }, bonsLivraison: true },
     });
 
+    await createLog({
+      action: 'UPDATE',
+      entity: 'Proforma',
+      entityId: id,
+      description: `Proforma mise à jour: ${id}`,
+      userId: (req as any).user?.userId,
+    });
+
     res.json(updated);
   } catch (e) { next(e); }
 });
 
 // PUT /api/proformas/:id/valider — Valider la proforma → génère la Facture
-router.put('/:id/valider', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/valider', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const proforma = await prisma.factureProforma.findUnique({
@@ -229,15 +244,24 @@ router.put('/:id/valider', async (req: Request, res: Response, next: NextFunctio
       return facture;
     });
 
+    await createLog({
+      action: 'UPDATE',
+      entity: 'Proforma',
+      entityId: id,
+      description: `Proforma validée: ${id}`,
+      userId: (req as any).user?.userId,
+    });
+
     res.json(result);
   } catch (e) { next(e); }
 });
 
 // DELETE /api/proformas/:id — Supprimer + remettre BLs en A FACTURER
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
     const proforma = await prisma.factureProforma.findUnique({ where: { id } });
+    const bls = await prisma.bonLivraison.findMany({ where: { proformaId: id } });
     if (!proforma) { res.status(404).json({ error: 'Proforma non trouvée' }); return; }
     if (proforma.statut === 'FACTURÉE') {
       res.status(400).json({ error: 'Impossible de supprimer une proforma déjà facturée' }); return;
@@ -250,6 +274,14 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
       });
       await tx.ligneProforma.deleteMany({ where: { proformaId: id } });
       await tx.factureProforma.delete({ where: { id } });
+    });
+
+    await createLog({
+      action: 'DELETE',
+      entity: 'Proforma',
+      entityId: id,
+      description: `Proforma supprimée: ${proforma.numero} du BL ${bls.map(b => b.numero).join(', ')}`,
+      userId: (req as any).user?.userId,
     });
 
     res.status(204).send();
