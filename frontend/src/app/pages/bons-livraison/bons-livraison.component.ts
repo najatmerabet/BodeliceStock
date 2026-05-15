@@ -265,15 +265,34 @@ export class BonsLivraisonComponent implements OnInit {
 
   // Appelé quand le client change dans le formulaire
   onClientChange(): void {
+    console.log('Client changé:', this.form.clientId);
     this.prixClientCache.clear();
     this.newLignePrixSpecifique = false;
-    // Si un produit est déjà sélectionné, re-résoudre son prix
-    if (this.newLigne.produitId && Number(this.form.clientId) > 0) {
+
+    const clientId = Number(this.form.clientId);
+
+    // 1. Mettre à jour le prix de la "nouvelle ligne" en cours de saisie
+    if (this.newLigne.produitId && clientId > 0) {
       this.resolvePrixForLigne(Number(this.newLigne.produitId));
     } else if (this.newLigne.produitId) {
       const p = this.getProduit(Number(this.newLigne.produitId));
       if (p) this.newLigne.prix = Number(p.prixUnitaire);
     }
+
+    // 2. Mettre à jour les prix de TOUTES les lignes déjà ajoutées
+    if (clientId > 0 && this.form.lignes.length > 0) {
+      console.log('Mise à jour des prix pour', this.form.lignes.length, 'lignes existantes');
+      this.form.lignes.forEach(ligne => {
+        this.prixClientService.resolve(clientId, ligne.produitId).subscribe({
+          next: (res) => {
+            ligne.prix = res.prix;
+            this.updateLigneTotal(ligne);
+            this.cdr.detectChanges();
+          }
+        });
+      });
+    }
+
     this.checkFormValid();
     this.cdr.detectChanges();
   }
@@ -309,6 +328,8 @@ export class BonsLivraisonComponent implements OnInit {
     const p = this.getProduit(Number(this.newLigne.produitId));
     if (!p) return;
 
+    console.log('Produit sélectionné:', p.nom, 'ID:', p.id);
+
     // Valeurs par défaut depuis le produit
     this.newLigne.produitUnite = p.unite;
     this.newLigne.nbUnites = 1;
@@ -322,6 +343,7 @@ export class BonsLivraisonComponent implements OnInit {
     } else {
       this.newLigne.prix = Number(p.prixUnitaire);
       this.updateLigneTotal(this.newLigne);
+      this.cdr.detectChanges();
     }
   }
 
@@ -340,6 +362,7 @@ export class BonsLivraisonComponent implements OnInit {
     this.resolvingPrice = true;
     this.prixClientService.resolve(clientId, produitId).subscribe({
       next: (res) => {
+        console.log('Prix résolu pour', produitId, ':', res);
         this.newLigne.prix = res.prix;
         this.newLignePrixSpecifique = res.isSpecifique;
         if (res.isSpecifique) {
