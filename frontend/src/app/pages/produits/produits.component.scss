@@ -11,7 +11,20 @@
 .table-card { background: #fff; border-radius: 14px; border: 1px solid #E2E8F0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); overflow: hidden; position: relative; }
 
 /* ── Toolbar ── */
-.toolbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; gap: 12px; border-bottom: 1px solid #F1F5F9; }
+.toolbar { padding: 14px 20px; border-bottom: 1px solid #F1F5F9; }
+.toolbar-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filters { display: flex; gap: 8px; align-items: center; }
+.filter-select {
+  padding: 6px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
+  font-family: inherit; font-size: 0.8rem; color: #475569; background: #fff;
+  outline: none; &:focus { border-color: var(--primary); }
+}
+.filter-input {
+  width: 80px; padding: 6px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
+  font-family: inherit; font-size: 0.8rem; color: #475569; background: #fff;
+  outline: none; &:focus { border-color: var(--primary); }
+  &::placeholder { color: #CBD5E1; }
+}
 .search {
   display: flex; align-items: center; gap: 8px; background: #F8FAFC; border: 1px solid #E2E8F0;
   border-radius: 10px; padding: 8px 14px; flex: 1; max-width: 380px; transition: all 0.2s;
@@ -356,4 +369,22 @@ td { padding: 13px 14px; border-bottom: 1px solid #F8FAFC; vertical-align: middl
   font-size: 0.78rem; color: #92400E;
   .material-symbols-rounded { font-size: 16px; flex-shrink: 0; }
 }
+
+/* ── Autocomplétion Nom Produit ── */
+.sug-field { position: relative; }
+.sug-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: #fff; border: 1px solid #E2E8F0; border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1); z-index: 100;
+  margin-top: 4px; max-height: 200px; overflow-y: auto;
+}
+.sug-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; cursor: pointer;
+  transition: background 0.12s;
+  &:not(:last-child) { border-bottom: 1px solid #F1F5F9; }
+  &:hover { background: #F0F4FF; }
+}
+.sug-nom { font-weight: 600; color: #1E3A5F; font-size: 0.88rem; }
+.sug-info { font-size: 0.72rem; color: #94A3B8; }
 

@@ -18,6 +18,9 @@ export class ProduitsComponent implements OnInit {
   filteredProduits: Produit[] = [];
   pagedProduits: Produit[] = [];
   searchQuery = '';
+  filterUnite = '';
+  filterMinKg = 0;
+  filterMaxKg = 0;
   loading = false;
   message = '';
   messageType: 'success' | 'error' = 'success';
@@ -50,6 +53,9 @@ export class ProduitsComponent implements OnInit {
   newPrixClientId = 0;
   newPrixClientPrix: number | null = null;
 
+  nomSuggestions: Produit[] = [];
+  showSuggestions = false;
+
   constructor(
     private produitService: ProduitService,
     private clientsService: ClientsService,
@@ -80,11 +86,27 @@ export class ProduitsComponent implements OnInit {
 
   applyFilter(): void {
     const q = this.searchQuery.toLowerCase().trim();
-    this.filteredProduits = !q ? [...this.produits] : this.produits.filter(p =>
-      p.nom.toLowerCase().includes(q) || (p.reference || '').toLowerCase().includes(q)
-    );
+    this.filteredProduits = this.produits.filter(p => {
+      const matchSearch = !q || p.nom.toLowerCase().includes(q) || (p.reference || '').toLowerCase().includes(q);
+      const matchUnite = !this.filterUnite || p.unite === this.filterUnite;
+      const matchMinKg = !this.filterMinKg || p.poidsUnitaire >= this.filterMinKg;
+      const matchMaxKg = !this.filterMaxKg || p.poidsUnitaire <= this.filterMaxKg;
+      return matchSearch && matchUnite && matchMinKg && matchMaxKg;
+    });
     this.currentPage = 1;
     this.updatePage();
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.filterUnite = '';
+    this.filterMinKg = 0;
+    this.filterMaxKg = 0;
+    this.applyFilter();
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!this.searchQuery || !!this.filterUnite || this.filterMinKg > 0 || this.filterMaxKg > 0;
   }
 
   updatePage(): void {
@@ -322,5 +344,42 @@ export class ProduitsComponent implements OnInit {
     }
     const usedIds = new Set(this.pendingPrixClients.map(pc => pc.clientId));
     return this.clients.filter(c => !usedIds.has(c.id));
+  }
+
+  onNomInput(): void {
+    if (!this.form.nom || this.form.nom.trim().length < 1) {
+      this.nomSuggestions = [];
+      this.showSuggestions = false;
+      return;
+    }
+    const q = this.form.nom.toLowerCase();
+    this.nomSuggestions = this.produits.filter(p =>
+      p.nom.toLowerCase().includes(q)
+    ).slice(0, 5);
+    this.showSuggestions = this.nomSuggestions.length > 0;
+  }
+
+  selectSuggestion(p: Produit): void {
+    this.form.nom = p.nom;
+    this.form.unite = p.unite;
+    this.form.poidsUnitaire = p.poidsUnitaire;
+    this.form.prixUnitaire = p.prixUnitaire;
+    this.form.tva = p.tva;
+    this.showSuggestions = false;
+    this.nomSuggestions = [];
+  }
+
+  hideSuggestions(): void {
+    setTimeout(() => { this.showSuggestions = false; }, 150);
+  }
+
+  onPoidsChange(): void {
+    if (this.form.poidsUnitaire && this.form.nom) {
+      const kg = this.form.poidsUnitaire;
+      const match = this.form.nom.match(/^(.+?)\s+(\d+(\.\d+)?)\s*kg$/i);
+      if (match) {
+        this.form.nom = `${match[1].trim()} ${kg}KG`;
+      }
+    }
   }
 }

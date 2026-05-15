@@ -9,7 +9,7 @@ datasource db {
 
 model Produit {
   id              Int              @id @default(autoincrement())
-  nom             String           @unique
+  nom             String
   poidsUnitaire   Decimal          @default(1) @db.Decimal(10, 2)
   prixUnitaire    Decimal          @db.Decimal(10, 2)
   quantite        Decimal          @default(0) @db.Decimal(10, 2)

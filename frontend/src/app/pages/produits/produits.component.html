@@ -25,14 +25,27 @@
   <!-- Table -->
   <div class="table-card">
     <div class="toolbar">
-      <div class="search">
-        <span class="material-symbols-rounded">search</span>
-        <input type="text" placeholder="Rechercher par nom ou référence..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
-        <span *ngIf="searchQuery" class="material-symbols-rounded clr" (click)="searchQuery=''; applyFilter()">close</span>
+      <div class="toolbar-row">
+        <div class="search">
+          <span class="material-symbols-rounded">search</span>
+          <input type="text" placeholder="Rechercher par nom ou référence..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" />
+          <span *ngIf="searchQuery" class="material-symbols-rounded clr" (click)="searchQuery=''; applyFilter()">close</span>
+        </div>
+        <div class="filters">
+          <select [(ngModel)]="filterUnite" (ngModelChange)="applyFilter()" class="filter-select">
+            <option value="">Tous types</option>
+            <option *ngFor="let u of unites" [value]="u">{{ u }}</option>
+          </select>
+          <input type="number" [(ngModel)]="filterMinKg" (ngModelChange)="applyFilter()" placeholder="Min kg" class="filter-input" min="0" step="0.5" />
+          <input type="number" [(ngModel)]="filterMaxKg" (ngModelChange)="applyFilter()" placeholder="Max kg" class="filter-input" min="0" step="0.5" />
+        </div>
+        <button class="btn btn-ghost" (click)="clearFilters()" *ngIf="hasActiveFilters" title="Effacer les filtres">
+          <span class="material-symbols-rounded">filter_alt_off</span>
+        </button>
+        <button class="btn btn-ghost" (click)="loadProduits()">
+          <span class="material-symbols-rounded">refresh</span>
+        </button>
       </div>
-      <button class="btn btn-ghost" (click)="loadProduits()">
-        <span class="material-symbols-rounded">refresh</span>
-      </button>
     </div>
 
     <div class="tbl-wrap">
@@ -118,9 +131,15 @@
           <label>Référence</label>
           <input type="text" [value]="form.reference" disabled class="disabled" />
         </div>
-        <div class="fld">
+        <div class="fld sug-field">
           <label>Nom du produit</label>
-          <input type="text" [(ngModel)]="form.nom" placeholder="Ex: Shawarma Poulet" />
+          <input type="text" [(ngModel)]="form.nom" (input)="onNomInput()" (blur)="hideSuggestions()" (focus)="onNomInput()" placeholder="Ex: Shawarma Poulet" />
+          <div class="sug-dropdown" *ngIf="showSuggestions && nomSuggestions.length > 0">
+            <div class="sug-item" *ngFor="let s of nomSuggestions" (mousedown)="selectSuggestion(s)">
+              <span class="sug-nom">{{ s.nom }}</span>
+              <span class="sug-info">{{ s.unite }} · {{ s.prixUnitaire }}DH/kg</span>
+            </div>
+          </div>
         </div>
         <div class="fld-row">
           <div class="fld">
@@ -137,7 +156,7 @@
         <div class="fld-row">
           <div class="fld">
             <label>Kg par Unité</label>
-            <input type="number" [(ngModel)]="form.poidsUnitaire" step="0.01" min="0.01" placeholder="Ex: 15" />
+            <input type="number" [(ngModel)]="form.poidsUnitaire" (ngModelChange)="onPoidsChange()" step="0.01" min="0.01" placeholder="Ex: 15" />
           </div>
           <div class="fld">
             <label>Prix / kg (DH)</label>
@@ -194,7 +213,7 @@
             <div *ngFor="let pc of prixClients" class="pc-item">
               <div class="pc-client">
                 <span class="material-symbols-rounded pc-icon">person</span>
-                <span class="pc-name">{{ pc.client?.nom }}</span>
+                <span class="pc-name">#{{ pc.client?.id }} - {{ pc.client?.nom }}</span>
               </div>
               <div class="pc-right">
                 <span class="pc-price">{{ pc.prix | number:'1.2-2' }} DH/kg</span>
@@ -215,7 +234,7 @@
           <div class="pc-add-row" *ngIf="getAvailableClients().length > 0 || (!editMode && pendingPrixClients.length < clients.length)">
             <select [(ngModel)]="newPrixClientId" class="pc-select">
               <option [value]="0" disabled>Choisir un client...</option>
-              <option *ngFor="let c of getAvailableClientsAll()" [value]="c.id">{{ c.nom }}</option>
+              <option *ngFor="let c of getAvailableClientsAll()" [value]="c.id">#{{ c.id }} - {{ c.nom }} ({{ c.ville || '—' }})</option>
             </select>
             <input type="number" class="pc-input" [(ngModel)]="newPrixClientPrix"
               placeholder="Prix DH/kg" step="0.5" min="0" />

@@ -325,32 +325,43 @@ export class BonsLivraisonComponent implements OnInit {
   }
 
   onProduitChange(): void {
-    const p = this.getProduit(Number(this.newLigne.produitId));
+    const rawId = this.newLigne.produitId;
+    if (!rawId || Number(rawId) === 0) {
+      this.newLigne.prix = 0;
+      this.newLignePrixSpecifique = false;
+      return;
+    }
+
+    const p = this.getProduit(Number(rawId));
     if (!p) return;
 
-    console.log('Produit sélectionné:', p.nom, 'ID:', p.id);
+    console.log('[BL] Produit changé:', p.nom, '(ID:', p.id, ')');
 
-    // Valeurs par défaut depuis le produit
+    // Valeurs par défaut depuis le produit (BASELINE)
     this.newLigne.produitUnite = p.unite;
     this.newLigne.nbUnites = 1;
     this.newLigne.poidsUnitaire = Number(p.poidsUnitaire);
+    this.newLigne.prix = Number(p.prixUnitaire); // Prix standard par défaut
     this.newLignePrixSpecifique = false;
+    this.updateLigneTotal(this.newLigne);
 
-    // Si un client est sélectionné → vérifier prix spécifique
+    // Si un client est sélectionné → tenter de résoudre un prix spécifique
     const clientId = Number(this.form.clientId);
     if (clientId > 0) {
       this.resolvePrixForLigne(p.id!);
     } else {
-      this.newLigne.prix = Number(p.prixUnitaire);
-      this.updateLigneTotal(this.newLigne);
       this.cdr.detectChanges();
     }
   }
 
   private resolvePrixForLigne(produitId: number): void {
-    // Cache hit
+    const clientId = Number(this.form.clientId);
+    if (!clientId || !produitId) return;
+
+    // Vérifier le cache
     if (this.prixClientCache.has(produitId)) {
       const cached = this.prixClientCache.get(produitId)!;
+      console.log('[BL] Prix résolu (CACHE):', cached);
       this.newLigne.prix = cached;
       this.newLignePrixSpecifique = true;
       this.updateLigneTotal(this.newLigne);
@@ -358,27 +369,25 @@ export class BonsLivraisonComponent implements OnInit {
       return;
     }
 
-    const clientId = Number(this.form.clientId);
     this.resolvingPrice = true;
     this.prixClientService.resolve(clientId, produitId).subscribe({
       next: (res) => {
-        console.log('Prix résolu pour', produitId, ':', res);
+        console.log('[BL] Prix résolu (API):', res);
         this.newLigne.prix = res.prix;
         this.newLignePrixSpecifique = res.isSpecifique;
+        
         if (res.isSpecifique) {
           this.prixClientCache.set(produitId, res.prix);
         }
+        
         this.updateLigneTotal(this.newLigne);
         this.resolvingPrice = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        // Fallback sur le prix standard
-        const p = this.getProduit(produitId);
-        if (p) this.newLigne.prix = Number(p.prixUnitaire);
-        this.newLignePrixSpecifique = false;
+      error: (err) => {
+        console.error('[BL] Erreur résolution prix:', err);
         this.resolvingPrice = false;
-        this.updateLigneTotal(this.newLigne);
+        // On garde le prix standard déjà mis dans onProduitChange
         this.cdr.detectChanges();
       }
     });

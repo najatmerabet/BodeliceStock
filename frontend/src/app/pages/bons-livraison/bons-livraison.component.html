@@ -232,7 +232,7 @@
           </div>
           <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="onClientChange()">
             <option [value]="0" disabled>— Choisir un client —</option>
-            <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
+            <option *ngFor="let c of clients" [value]="c.id">#{{ c.id }} · {{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
           </select>
           <div *ngIf="form.clientId > 0" class="client-preview">
             <ng-container *ngFor="let c of clients">
@@ -262,7 +262,7 @@
               <select [(ngModel)]="newLigne.produitId" (ngModelChange)="onProduitChange()">
                 <option [value]="0" disabled>— Choisir un produit —</option>
                 <option *ngFor="let p of produits" [value]="p.id">
-                  {{ p.reference }} · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
+                  {{ p.reference }} (#{{ p.id }}) · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
                 </option>
               </select>
             </div>
@@ -519,7 +519,7 @@
           </div>
           <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="onClientChange()">
             <option [value]="0" disabled>— Choisir un client —</option>
-            <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
+            <option *ngFor="let c of clients" [value]="c.id">#{{ c.id }} · {{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
           </select>
         </div>
 
@@ -535,7 +535,7 @@
               <select [(ngModel)]="newLigne.produitId" (ngModelChange)="onProduitChange()">
                 <option [value]="0" disabled>— Choisir un produit —</option>
                 <option *ngFor="let p of produits" [value]="p.id">
-                  {{ p.reference }} · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
+                  {{ p.reference }} (#{{ p.id }}) · {{ p.nom }} ({{ p.quantite }} {{ p.unite }}s dispo)
                 </option>
               </select>
             </div>

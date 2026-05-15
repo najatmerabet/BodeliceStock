@@ -100,7 +100,6 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
     });
     res.status(201).json(produit);
   } catch (error: any) {
-    if (error.code === 'P2002') { res.status(400).json({ error: `Un produit avec ce nom existe déjà` }); return; }
     next(error);
   }
 });
