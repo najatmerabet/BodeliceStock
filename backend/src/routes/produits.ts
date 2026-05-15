@@ -8,8 +8,12 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 async function generateReference(): Promise<string> {
-  const last = await prisma.produit.findFirst({ orderBy: { id: 'desc' } });
-  const num = last ? last.id + 1 : 1;
+  const all = await prisma.produit.findMany({ select: { reference: true }, orderBy: { reference: 'asc' } });
+  const usedNums = new Set(
+    all.map(p => parseInt(p.reference.replace('PRD-', ''), 10)).filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (usedNums.has(num)) num++;
   return `PRD-${String(num).padStart(3, '0')}`;
 }
 

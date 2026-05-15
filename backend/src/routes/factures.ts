@@ -4,13 +4,15 @@ import { createLog } from '../services/log.service';
 import { authMiddleware } from './auth.middleware';
 const router = Router();
 
-// Génère le prochain numéro facture : FA-0001, FA-0002...
+// Génère le prochain numéro facture : FA-0001, FA-0002... (comble les trous)
 async function generateNumeroFacture(): Promise<string> {
-  const last = await prisma.facture.findFirst({
-    orderBy: { id: 'desc' },
-  });
-  const nextNum = last ? last.id + 1 : 1;
-  return `FA-${String(nextNum).padStart(4, '0')}`;
+  const all = await prisma.facture.findMany({ select: { numero: true }, orderBy: { numero: 'asc' } });
+  const usedNums = new Set(
+    all.map(f => parseInt(f.numero.replace('FA-', ''), 10)).filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (usedNums.has(num)) num++;
+  return `FA-${String(num).padStart(4, '0')}`;
 }
 
 // GET /api/factures — Liste toutes les factures

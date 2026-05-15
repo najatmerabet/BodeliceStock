@@ -158,6 +158,77 @@
             <strong>{{ form.quantite * form.poidsUnitaire * form.prixUnitaire | number:'1.2-2' }} DH</strong>
           </div>
         </div>
+
+        <!-- ─── PRIX SPÉCIFIQUES PAR CLIENT ─── -->
+        <div class="pc-section">
+          <div class="pc-header">
+            <span class="material-symbols-rounded">sell</span>
+            <span>Prix spécifiques par client</span>
+            <span *ngIf="!editMode && pendingPrixClients.length > 0" class="pc-pending-count">{{ pendingPrixClients.length }} en attente</span>
+          </div>
+
+          <!-- Loader (mode édition seulement) -->
+          <div *ngIf="loadingPrixClients" class="pc-loading">Chargement...</div>
+
+          <!-- Mode AJOUT : liste des prix en attente -->
+          <div *ngIf="!editMode && !loadingPrixClients" class="pc-list">
+            <div *ngFor="let pc of pendingPrixClients; let i = index" class="pc-item pc-item-pending">
+              <div class="pc-client">
+                <span class="material-symbols-rounded pc-icon">person</span>
+                <span class="pc-name">{{ pc.clientNom }}</span>
+              </div>
+              <div class="pc-right">
+                <span class="pc-price">{{ pc.prix | number:'1.2-2' }} DH/kg</span>
+                <button class="pc-del" (click)="deletePendingPrixClient(i)" title="Retirer">
+                  <span class="material-symbols-rounded">close</span>
+                </button>
+              </div>
+            </div>
+            <div *ngIf="pendingPrixClients.length === 0" class="pc-empty">
+              Aucun prix spécifique — seront ajoutés après la création du produit
+            </div>
+          </div>
+
+          <!-- Mode MODIFICATION : liste des prix enregistrés -->
+          <div *ngIf="editMode && !loadingPrixClients" class="pc-list">
+            <div *ngFor="let pc of prixClients" class="pc-item">
+              <div class="pc-client">
+                <span class="material-symbols-rounded pc-icon">person</span>
+                <span class="pc-name">{{ pc.client?.nom }}</span>
+              </div>
+              <div class="pc-right">
+                <span class="pc-price">{{ pc.prix | number:'1.2-2' }} DH/kg</span>
+                <span class="pc-std" *ngIf="form.prixUnitaire">
+                  (std: {{ form.prixUnitaire | number:'1.2-2' }})
+                </span>
+                <button class="pc-del" (click)="deletePrixClient(pc.id)" title="Supprimer">
+                  <span class="material-symbols-rounded">delete</span>
+                </button>
+              </div>
+            </div>
+            <div *ngIf="prixClients.length === 0" class="pc-empty">
+              Aucun prix spécifique — prix standard appliqué à tous les clients
+            </div>
+          </div>
+
+          <!-- Formulaire d'ajout (commun aux deux modes) -->
+          <div class="pc-add-row" *ngIf="getAvailableClients().length > 0 || (!editMode && pendingPrixClients.length < clients.length)">
+            <select [(ngModel)]="newPrixClientId" class="pc-select">
+              <option [value]="0" disabled>Choisir un client...</option>
+              <option *ngFor="let c of getAvailableClientsAll()" [value]="c.id">{{ c.nom }}</option>
+            </select>
+            <input type="number" class="pc-input" [(ngModel)]="newPrixClientPrix"
+              placeholder="Prix DH/kg" step="0.5" min="0" />
+            <button class="pc-btn-add" (click)="addPrixClient()"
+              [disabled]="!newPrixClientId || !newPrixClientPrix || savingPrixClient">
+              <span class="material-symbols-rounded">add</span>
+            </button>
+          </div>
+          <div *ngIf="editMode && getAvailableClients().length === 0 && prixClients.length > 0" class="pc-all-set">
+            <span class="material-symbols-rounded">check_circle</span> Tous les clients ont un prix spécifique
+          </div>
+        </div>
+
       </div>
       <div class="m-foot">
         <button class="btn btn-outline" (click)="closeModal()">Annuler</button>
@@ -168,6 +239,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Delete Modal -->
   <div *ngIf="deleteTarget" class="overlay" (click)="cancelDelete()">

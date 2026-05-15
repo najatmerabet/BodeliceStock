@@ -226,3 +226,134 @@ td { padding: 13px 14px; border-bottom: 1px solid #F8FAFC; vertical-align: middl
   .fld-row { flex-direction: column; gap: 0; }
   .pager { flex-direction: column; gap: 10px; }
 }
+
+/* ══════════════════════════════════════════
+   PRIX SPÉCIFIQUES PAR CLIENT
+═══════════════════════════════════════════ */
+.modal { max-width: 520px; }
+
+.pc-section {
+  margin-top: 18px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pc-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #F0F4FF, #EEF2FF);
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 0.78rem; font-weight: 700;
+  color: #4338CA; text-transform: uppercase; letter-spacing: 0.5px;
+  .material-symbols-rounded { font-size: 16px; }
+}
+
+/* Badge "en attente" dans le header */
+.pc-pending-count {
+  margin-left: auto;
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 20px;
+  background: #FEF3C7; color: #92400E;
+  font-size: 0.68rem; font-weight: 700;
+  border: 1px solid #FDE68A;
+}
+
+/* Item en mode ajout (non encore sauvegardé) */
+.pc-item-pending {
+  border-left: 3px solid #F59E0B;
+  background: #FFFBEB !important;
+  .pc-name { color: #92400E; }
+  .pc-price { background: #FEF3C7 !important; color: #92400E !important; }
+}
+
+.pc-loading {
+  padding: 12px 14px; font-size: 0.8rem; color: #94A3B8; font-style: italic;
+}
+
+.pc-list { padding: 6px 0; }
+
+.pc-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; gap: 8px; transition: background 0.12s;
+  &:hover { background: #F8FAFC; }
+  &:not(:last-child) { border-bottom: 1px solid #F1F5F9; }
+}
+
+.pc-client {
+  display: flex; align-items: center; gap: 7px;
+  .pc-icon { font-size: 15px; color: #94A3B8; }
+  .pc-name { font-size: 0.85rem; font-weight: 600; color: #1E3A5F; }
+}
+
+.pc-right {
+  display: flex; align-items: center; gap: 8px;
+  .pc-price {
+    font-size: 0.88rem; font-weight: 800; color: #4338CA;
+    background: #EEF2FF; padding: 2px 9px; border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pc-std {
+    font-size: 0.72rem; color: #94A3B8;
+  }
+}
+
+.pc-del {
+  width: 26px; height: 26px; border: none; border-radius: 6px;
+  background: transparent; color: #CBD5E1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  .material-symbols-rounded { font-size: 15px; }
+  &:hover { background: #FEE2E2; color: #DC2626; }
+}
+
+.pc-empty {
+  padding: 12px 14px; font-size: 0.78rem; color: #94A3B8; font-style: italic; text-align: center;
+}
+
+.pc-add-row {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px 14px;
+  background: #FAFBFC;
+  border-top: 1px solid #F1F5F9;
+
+  .pc-select {
+    flex: 1; padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
+    font-family: inherit; font-size: 0.82rem; color: #0F172A;
+    background: #fff; outline: none;
+    &:focus { border-color: #4338CA; box-shadow: 0 0 0 2px rgba(67,56,202,0.08); }
+  }
+
+  .pc-input {
+    width: 110px; padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
+    font-family: inherit; font-size: 0.82rem; color: #0F172A;
+    background: #fff; outline: none; flex-shrink: 0;
+    &:focus { border-color: #4338CA; box-shadow: 0 0 0 2px rgba(67,56,202,0.08); }
+    &::placeholder { color: #CBD5E1; }
+  }
+
+  .pc-btn-add {
+    width: 34px; height: 34px; border: none; border-radius: 8px;
+    background: #4338CA; color: #fff; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    .material-symbols-rounded { font-size: 18px; }
+    &:hover:not(:disabled) { background: #3730A3; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+}
+
+.pc-all-set {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; font-size: 0.78rem; color: #059669; font-weight: 600;
+  background: #F0FDF4; border-top: 1px solid #D1FAE5;
+  .material-symbols-rounded { font-size: 15px; }
+}
+
+.pc-note {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 14px; padding: 10px 14px;
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px;
+  font-size: 0.78rem; color: #92400E;
+  .material-symbols-rounded { font-size: 16px; flex-shrink: 0; }
+}
+

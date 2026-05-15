@@ -5,9 +5,13 @@ import { authMiddleware } from './auth.middleware';
 const router = Router();
 
 async function generateNumeroAvoir(): Promise<string> {
-  const last = await prisma.factureAvoir.findFirst({ orderBy: { id: 'desc' } });
-  const next = last ? last.id + 1 : 1;
-  return `AV-${String(next).padStart(4, '0')}`;
+  const all = await prisma.factureAvoir.findMany({ select: { numero: true }, orderBy: { numero: 'asc' } });
+  const usedNums = new Set(
+    all.map(a => parseInt(a.numero.replace('AV-', ''), 10)).filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (usedNums.has(num)) num++;
+  return `AV-${String(num).padStart(4, '0')}`;
 }
 
 // GET /api/avoirs

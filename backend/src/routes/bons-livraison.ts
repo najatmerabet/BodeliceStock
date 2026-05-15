@@ -6,9 +6,13 @@ import { getBonLivraisonChanges } from '../utils/diffBl';
 const router = Router();
 
 async function generateNumeroBL(): Promise<string> {
-  const last = await prisma.bonLivraison.findFirst({ orderBy: { id: 'desc' } });
-  const nextId = last ? last.id + 1 : 1;
-  return `BL-${String(nextId).padStart(4, '0')}`;
+  const all = await prisma.bonLivraison.findMany({ select: { numero: true }, orderBy: { numero: 'asc' } });
+  const usedNums = new Set(
+    all.map(bl => parseInt(bl.numero.replace('BL-', ''), 10)).filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (usedNums.has(num)) num++;
+  return `BL-${String(num).padStart(4, '0')}`;
 }
 
 // GET / — Liste tous les BLs

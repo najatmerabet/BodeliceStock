@@ -8,6 +8,7 @@ import { ProduitService } from '../../services/produit.service';
 import { ClientsService } from '../../services/clients.service';
 import { FactureService } from '../../services/facture.service';
 import { ProformaService } from '../../services/proforma.service';
+import { PrixClientService } from '../../services/prix-client.service';
 import { BonLivraison, LigneBL } from '../../models/bon-livraison.model';
 import { Produit } from '../../models/produit.model';
 
@@ -59,6 +60,11 @@ export class BonsLivraisonComponent implements OnInit {
   formValid = false;
   newLigne: LigneBL = { produitId: 0, nbUnites: 1, poidsUnitaire: 0, quantite: 0, prix: 0 };
 
+  // Prix client
+  prixClientCache = new Map<number, number>(); // produitId → prix spécifique
+  resolvingPrice = false;
+  newLignePrixSpecifique = false; // indique si le prix affiché est un prix client
+
   // Pagination
   currentPage = 1;
   pageSize = 10;
@@ -72,6 +78,7 @@ export class BonsLivraisonComponent implements OnInit {
     private clientsService: ClientsService,
     private factureService: FactureService,
     private proformaService: ProformaService,
+    private prixClientService: PrixClientService,
     private cdr: ChangeDetectorRef,
     private router: Router,
     private sanitizer: DomSanitizer
@@ -250,7 +257,24 @@ export class BonsLivraisonComponent implements OnInit {
     this.form = { clientId: 0, lignes: [] };
     this.formValid = false;
     this.newLigne = { produitId: 0, quantite: 1, prix: 0 };
+    this.prixClientCache.clear();
+    this.newLignePrixSpecifique = false;
     this.view = 'create';
+    this.cdr.detectChanges();
+  }
+
+  // Appelé quand le client change dans le formulaire
+  onClientChange(): void {
+    this.prixClientCache.clear();
+    this.newLignePrixSpecifique = false;
+    // Si un produit est déjà sélectionné, re-résoudre son prix
+    if (this.newLigne.produitId && Number(this.form.clientId) > 0) {
+      this.resolvePrixForLigne(Number(this.newLigne.produitId));
+    } else if (this.newLigne.produitId) {
+      const p = this.getProduit(Number(this.newLigne.produitId));
+      if (p) this.newLigne.prix = Number(p.prixUnitaire);
+    }
+    this.checkFormValid();
     this.cdr.detectChanges();
   }
 
@@ -283,13 +307,58 @@ export class BonsLivraisonComponent implements OnInit {
 
   onProduitChange(): void {
     const p = this.getProduit(Number(this.newLigne.produitId));
-    if (p) {
+    if (!p) return;
+
+    // Valeurs par défaut depuis le produit
+    this.newLigne.produitUnite = p.unite;
+    this.newLigne.nbUnites = 1;
+    this.newLigne.poidsUnitaire = Number(p.poidsUnitaire);
+    this.newLignePrixSpecifique = false;
+
+    // Si un client est sélectionné → vérifier prix spécifique
+    const clientId = Number(this.form.clientId);
+    if (clientId > 0) {
+      this.resolvePrixForLigne(p.id!);
+    } else {
       this.newLigne.prix = Number(p.prixUnitaire);
-      this.newLigne.produitUnite = p.unite;
-      this.newLigne.nbUnites = 1;
-      this.newLigne.poidsUnitaire = Number(p.poidsUnitaire);
       this.updateLigneTotal(this.newLigne);
     }
+  }
+
+  private resolvePrixForLigne(produitId: number): void {
+    // Cache hit
+    if (this.prixClientCache.has(produitId)) {
+      const cached = this.prixClientCache.get(produitId)!;
+      this.newLigne.prix = cached;
+      this.newLignePrixSpecifique = true;
+      this.updateLigneTotal(this.newLigne);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const clientId = Number(this.form.clientId);
+    this.resolvingPrice = true;
+    this.prixClientService.resolve(clientId, produitId).subscribe({
+      next: (res) => {
+        this.newLigne.prix = res.prix;
+        this.newLignePrixSpecifique = res.isSpecifique;
+        if (res.isSpecifique) {
+          this.prixClientCache.set(produitId, res.prix);
+        }
+        this.updateLigneTotal(this.newLigne);
+        this.resolvingPrice = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Fallback sur le prix standard
+        const p = this.getProduit(produitId);
+        if (p) this.newLigne.prix = Number(p.prixUnitaire);
+        this.newLignePrixSpecifique = false;
+        this.resolvingPrice = false;
+        this.updateLigneTotal(this.newLigne);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   addLigne(): void {

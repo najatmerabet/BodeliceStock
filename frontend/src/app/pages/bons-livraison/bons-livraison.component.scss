@@ -425,3 +425,51 @@ tfoot td { border-top: 2px solid #E2E8F0 !important; }
   .detail-kpis { grid-template-columns: 1fr; }
   .page-hdr { flex-direction: column; align-items: flex-start; }
 }
+
+/* ══════════════════════════════════════════
+   PRIX SPÉCIFIQUE CLIENT — BADGE & CHAMP
+═══════════════════════════════════════════ */
+
+/* Label avec badge inline */
+.prix-fld label {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+
+.prix-client-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 20px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: #fff; font-size: 0.63rem; font-weight: 700;
+  letter-spacing: 0.3px; text-transform: none;
+  .material-symbols-rounded { font-size: 11px; }
+  animation: badgePop 0.25s ease;
+}
+
+/* Input surligné quand prix spécifique */
+.prix-input-wrap {
+  position: relative; display: flex; align-items: center;
+}
+
+.prix-input-wrap input { flex: 1; }
+
+input.prix-specifique {
+  border-color: #7C3AED !important;
+  background: #FAF5FF !important;
+  color: #5B21B6 !important;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.1) !important;
+}
+
+/* Spinner de résolution du prix */
+.prix-spinner {
+  position: absolute; right: 10px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #E2E8F0;
+  border-top-color: #7C3AED;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes badgePop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+

@@ -13,6 +13,7 @@ import avoirsRouter from './routes/avoirs';
 import dashboardRouter from './routes/dashboard';
 import { errorHandler } from './middleware/errorHandler';
 import statisticsRouter from './routes/statistics';
+import prixClientRouter from './routes/prix-client';
 dotenv.config();
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/proformas', proformasRouter);
 app.use('/api/avoirs', avoirsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/logs', logs);
+app.use('/api/prix-client', prixClientRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

@@ -8,18 +8,19 @@ datasource db {
 }
 
 model Produit {
-  id             Int              @id @default(autoincrement())
-  nom            String           @unique
-  poidsUnitaire  Decimal          @default(1) @db.Decimal(10, 2)
-  prixUnitaire   Decimal          @db.Decimal(10, 2)
-  quantite       Decimal          @default(0) @db.Decimal(10, 2)
-  reference      String           @unique
-  unite          String           @default("kg")
-  tva            Decimal          @default(0) @db.Decimal(5, 2) // TVA en % (0 = exonéré, 20 = 20%)
-  lignesBl       LigneBl[]
-  lignesProforma LigneProforma[]
-  lignesAvoir    LigneAvoir[]
-  mouvements     StockMouvement[]
+  id              Int              @id @default(autoincrement())
+  nom             String           @unique
+  poidsUnitaire   Decimal          @default(1) @db.Decimal(10, 2)
+  prixUnitaire    Decimal          @db.Decimal(10, 2)
+  quantite        Decimal          @default(0) @db.Decimal(10, 2)
+  reference       String           @unique
+  unite           String           @default("kg")
+  tva             Decimal          @default(0) @db.Decimal(5, 2) // TVA en % (0 = exonéré, 20 = 20%)
+  lignesBl        LigneBl[]
+  lignesProforma  LigneProforma[]
+  lignesAvoir     LigneAvoir[]
+  mouvements      StockMouvement[]
+  prixClients     PrixClient[]
 
   @@map("produits")
 }
@@ -39,17 +40,18 @@ model StockMouvement {
 }
 
 model Client {
-  id            Int            @id @default(autoincrement())
-  nom           String
-  ice           String?
-  telephone     String?
-  adresse       String?
-  codepostal    String?
-  email         String?
-  ville         String?
-  bonsLivraison BonLivraison[]
-  factures      Facture[]
-  proformas     FactureProforma[]
+  id              Int              @id @default(autoincrement())
+  nom             String
+  ice             String?
+  telephone       String?
+  adresse         String?
+  codepostal      String?
+  email           String?
+  ville           String?
+  bonsLivraison   BonLivraison[]
+  factures        Facture[]
+  proformas       FactureProforma[]
+  prixSpecifiques PrixClient[]
 
   @@map("clients")
 }
@@ -211,4 +213,17 @@ model Paiement {
   facture   Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
 
   @@map("paiements")
+}
+
+// ══════ PRIX SPÉCIFIQUES PAR CLIENT ══════
+model PrixClient {
+  id        Int     @id @default(autoincrement())
+  clientId  Int     @map("client_id")
+  produitId Int     @map("produit_id")
+  prix      Decimal @db.Decimal(10, 2)
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  produit   Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, produitId])
+  @@map("prix_client")
 }

@@ -230,7 +230,7 @@
             </div>
             <span class="material-symbols-rounded step-check" *ngIf="form.clientId > 0">check_circle</span>
           </div>
-          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="checkFormValid()">
+          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="onClientChange()">
             <option [value]="0" disabled>— Choisir un client —</option>
             <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
           </select>
@@ -274,9 +274,17 @@
               <label>Poids / <span class="unit-hint">{{ newLigne.produitUnite || 'unité' }}</span></label>
               <input type="number" [(ngModel)]="newLigne.poidsUnitaire" step="0.1" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
             </div>
-            <div class="fld">
-              <label>Prix / kg</label>
-              <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            <div class="fld prix-fld">
+              <label>Prix / kg
+                <span *ngIf="newLignePrixSpecifique" class="prix-client-badge">
+                  <span class="material-symbols-rounded">sell</span> Prix client
+                </span>
+              </label>
+              <div class="prix-input-wrap">
+                <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)"
+                  [class.prix-specifique]="newLignePrixSpecifique" />
+                <span *ngIf="resolvingPrice" class="prix-spinner"></span>
+              </div>
             </div>
             <div class="fld fld-btn">
               <button class="add-ligne-btn" (click)="addLigne()" [disabled]="!newLigne.produitId || (newLigne.nbUnites || 0) <= 0">
@@ -509,7 +517,7 @@
             <div><h3>Client</h3><p>Modifiez si nécessaire</p></div>
             <span class="material-symbols-rounded step-check" *ngIf="form.clientId > 0">check_circle</span>
           </div>
-          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="checkFormValid()">
+          <select class="full-select" [(ngModel)]="form.clientId" (ngModelChange)="onClientChange()">
             <option [value]="0" disabled>— Choisir un client —</option>
             <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}{{ c.ville ? ' · ' + c.ville : '' }}</option>
           </select>
@@ -539,9 +547,17 @@
               <label>Poids / <span class="unit-hint">{{ newLigne.produitUnite || 'unité' }}</span></label>
               <input type="number" [(ngModel)]="newLigne.poidsUnitaire" step="0.1" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
             </div>
-            <div class="fld">
-              <label>Prix / kg</label>
-              <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)" />
+            <div class="fld prix-fld">
+              <label>Prix / kg
+                <span *ngIf="newLignePrixSpecifique" class="prix-client-badge">
+                  <span class="material-symbols-rounded">sell</span> Prix client
+                </span>
+              </label>
+              <div class="prix-input-wrap">
+                <input type="number" [(ngModel)]="newLigne.prix" step="0.5" min="0" (ngModelChange)="updateLigneTotal(newLigne)"
+                  [class.prix-specifique]="newLignePrixSpecifique" />
+                <span *ngIf="resolvingPrice" class="prix-spinner"></span>
+              </div>
             </div>
             <div class="fld fld-btn">
               <button class="add-ligne-btn" (click)="addLigne()" [disabled]="!newLigne.produitId || (newLigne.nbUnites || 0) <= 0">
