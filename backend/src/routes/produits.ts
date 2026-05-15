@@ -27,23 +27,31 @@ router.post('/import', authMiddleware, upload.single('file'), async (req: Reques
     for (const row of data as any[]) {
       if (row.nom && row.prixUnitaire !== undefined) {
         const ref = row.reference || await generateReference();
-        const produit = await prisma.produit.upsert({
-          where: { nom: String(row.nom) },
-          update: {
-            prixUnitaire: parseFloat(String(row.prixUnitaire)),
-            unite: String(row.unite || 'kg'),
-            poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
-            quantite: parseFloat(String(row.quantite || 0)),
-          },
-          create: {
-            reference: ref,
-            nom: String(row.nom),
-            unite: String(row.unite || 'kg'),
-            poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
-            quantite: parseFloat(String(row.quantite || 0)),
-            prixUnitaire: parseFloat(String(row.prixUnitaire)),
-          }
-        });
+        const existing = await prisma.produit.findUnique({ where: { reference: ref } });
+        let produit;
+        if (existing) {
+          produit = await prisma.produit.update({
+            where: { id: existing.id },
+            data: {
+              nom: String(row.nom),
+              prixUnitaire: parseFloat(String(row.prixUnitaire)),
+              unite: String(row.unite || 'kg'),
+              poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
+              quantite: parseFloat(String(row.quantite || 0)),
+            },
+          });
+        } else {
+          produit = await prisma.produit.create({
+            data: {
+              reference: ref,
+              nom: String(row.nom),
+              unite: String(row.unite || 'kg'),
+              poidsUnitaire: parseFloat(String(row.poidsUnitaire || 1)),
+              quantite: parseFloat(String(row.quantite || 0)),
+              prixUnitaire: parseFloat(String(row.prixUnitaire)),
+            },
+          });
+        }
         await createLog({
           action: 'CREATE',
           entity: 'Produit',
