@@ -60,9 +60,9 @@ export class LogsComponent implements OnInit {
 
     this.logsService.getLogs(params).subscribe({
       next: (result) => {
-        this.logs = result.data;
-        this.totalCount = result.total;
-        this.totalPages = result.totalPages;
+        this.logs = result.data || [];
+        this.totalCount = result.total || 0;
+        this.totalPages = result.totalPages || 1;
         this.applyLocalFilters();
         this.cdr.detectChanges();
       },
@@ -82,7 +82,8 @@ export class LogsComponent implements OnInit {
   }
 
   applyLocalFilters(): void {
-    let result = [...this.logs];
+    const logs = this.logs || [];
+    let result = [...logs];
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
@@ -138,16 +139,17 @@ export class LogsComponent implements OnInit {
   }
 
   get groupedLogs(): { date: string; label: string; logs: any[] }[] {
+    const logs = this.filteredLogs || [];
     const groups: { [key: string]: any[] } = {};
-    this.filteredLogs.forEach(log => {
+    logs.forEach(log => {
       const dateKey = new Date(log.createdAt).toDateString();
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(log);
     });
-    return Object.entries(groups).map(([date, logs]) => ({
+    return Object.entries(groups).map(([date, logsArr]) => ({
       date,
       label: this.getDateLabel(date),
-      logs,
+      logs: logsArr,
     }));
   }
 
