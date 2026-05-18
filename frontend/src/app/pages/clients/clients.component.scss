@@ -62,7 +62,6 @@
   .material-symbols-rounded { font-size: 16px; color: #94A3B8; }
   &.act-edit:hover { background: #EFF6FF; border-color: #BFDBFE; .material-symbols-rounded { color: #2563EB; } }
   &.act-del:hover { background: #FEF2F2; border-color: #FECACA; .material-symbols-rounded { color: #DC2626; } }
-  &.act-releve:hover { background: #EFF6FF; border-color: #93C5FD; .material-symbols-rounded { color: #1D4ED8; } }
 }
 .tc { text-align: center; }
 .th-filter-input { width: 100%; padding: 4px 8px; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 0.75rem; color: #0F172A; background: #F8FAFC; outline: none; font-weight: 400; transition: border 0.15s;
@@ -81,8 +80,6 @@
 .modal-sm { max-width: 380px; }
 .modal-lg { max-width: 750px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #F1F5F9; flex-shrink: 0;
-.modal-releve { max-width: 500px; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #F1F5F9;
   h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0F172A; }
 }
 .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #F1F5F9; cursor: pointer; display: flex; align-items: center; justify-content: center; .material-symbols-rounded { font-size: 18px; color: #64748B; } &:hover { background: #E2E8F0; } }
@@ -285,5 +282,4 @@
   .cli-page { padding: 20px 16px; }
   .stats-row { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; .full-width { grid-column: 1; } }
-}
 }
