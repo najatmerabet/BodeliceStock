@@ -300,7 +300,8 @@ export class ProformasComponent implements OnInit {
       doc.setFontSize(7.5);
       doc.setTextColor(...NOIR);
       if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
-      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, CY + 40);
+      if (client.reference) doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, CY + 37);
+      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, client.reference ? CY + 41 : CY + 40);
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');

@@ -41,6 +41,7 @@ model StockMouvement {
 
 model Client {
   id              Int              @id @default(autoincrement())
+  reference       String?          @unique
   nom             String
   ice             String?
   telephone       String?

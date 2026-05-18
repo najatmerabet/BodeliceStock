@@ -20,7 +20,7 @@ export class ClientsComponent implements OnInit {
   toastType: 'ok' | 'err' = 'ok';
   showModal = false;
   editMode = false;
-  form: Client = { nom: '',ice: '' ,adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
+  form: Client = { nom: '', ice: '', reference: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
   selectedClient: Client | null = null;
   deleteTarget: Client | null = null;
   deleting = false;
@@ -98,7 +98,7 @@ private showMessage(msg: string, type: 'success' | 'error'): void {
 
   openAdd(): void {
     this.editMode = false;
-    this.form = { nom: '', ice: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
+    this.form = { nom: '', ice: '', reference: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
     this.showModal = true;
 
   }
@@ -119,12 +119,23 @@ next: (client) => {
           }
            console.log('==========>Client mis à jour :', client);
          },
-        error: (err) => console.error('Erreur:', err)
+        error: (err) => {
+          console.error('Erreur modification:', err);
+          this.showToast(err?.error?.error || err?.message || 'Erreur', 'err');
+          this.cdr.detectChanges();
+        }
       });
       return;
     }else {
       console.log('==========>Nouveau client ajouté :');
-    this.clientsService.addClient(this.form).subscribe({
+    const payload: any = { nom: this.form.nom };
+    if (this.form.ice) payload.ice = this.form.ice;
+    if (this.form.adresse) payload.adresse = this.form.adresse;
+    if (this.form.telephone) payload.telephone = this.form.telephone;
+    if (this.form.email) payload.email = this.form.email;
+    if (this.form.ville) payload.ville = this.form.ville;
+    if (this.form.codepostal) payload.codepostal = this.form.codepostal;
+    this.clientsService.addClient(payload).subscribe({
       next: (client) => {
         this.clients.push(client);
         this.applyFilter();
@@ -132,9 +143,11 @@ next: (client) => {
         this.showToast('Client ajouté avec succès', 'ok');
         this.cdr.detectChanges();
       },
-      
-      error: (err) => console.error('Erreur:', err)
-     
+      error: (err) => {
+        console.error('Erreur ajout:', err);
+        this.showToast(err?.error?.error || err?.message || 'Erreur', 'err');
+        this.cdr.detectChanges();
+      }
     });
   }
   }

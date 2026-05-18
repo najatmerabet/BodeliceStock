@@ -41,10 +41,22 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   console.log("🔴 ROUTE POST CLIENTS ATTEINTE");
   console.log("req.user:", (req as any).user);
+  console.log("body:", req.body);
   try{
+    const lastClient = await prisma.client.findFirst({
+      orderBy: { id: 'desc' },
+      select: { reference: true }
+    });
+    
+    let newRef = 'CLI-001';
+    if (lastClient?.reference) {
+      const num = parseInt(lastClient.reference.replace('CLI-', '')) || 0;
+      newRef = `CLI-${String(num + 1).padStart(3, '0')}`;
+    }
+
     const { nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
     const client = await prisma.client.create({
-      data: { nom, ice, telephone, adresse, email, ville, codepostal },
+      data: { reference: newRef, nom, ice, telephone, adresse, email, ville, codepostal },
     });
     try{
     await createLog({
@@ -58,17 +70,17 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
     res.status(201).json(client);
   } catch (error) {
-    res.status(400).json({ error: 'Erreur lors de la création du client' });
+    res.status(400).json({ error: 'Erreur lors de la création du client', details: (error as any).message });
   }
 });
 // PUT /api/clients/:id — Modifier un client
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("🔵 ROUTE PUT CLIENTS ATTEINTE");
-    const { nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
+    const { reference, nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
     const client = await prisma.client.update({
       where: { id: parseInt(String(req.params.id)) },
-      data: { nom, ice, telephone, adresse, email, ville, codepostal },
+      data: { reference: reference || null, nom, ice, telephone, adresse, email, ville, codepostal },
     });
     await createLog({
       action: 'UPDATE',
@@ -83,7 +95,8 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
       res.status(404).json({ error: 'Client non trouvé' });
       return;
     }
-    next(error);
+    console.error('PUT client error:', error);
+    res.status(400).json({ error: 'Erreur lors de la mise à jour du client', details: error.message });
   }
 });
 

@@ -1,5 +1,6 @@
 export interface  Client {
     id?: number;
+    reference?: string;
     nom : string;
     adresse : string;
     telephone : string;

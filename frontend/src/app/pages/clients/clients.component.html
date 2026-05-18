@@ -75,6 +75,7 @@
       <table class="cli-table">
         <thead>
           <tr>
+            <th>Réf.</th>
             <th>Client</th>
             <th>ICE</th>
             <th>Téléphone</th>
@@ -86,6 +87,7 @@
 
         <tbody>
           <tr *ngFor="let client of pagedClients" class="cli-row">
+            <td class="mono-sm">{{ client.reference || '-' }}</td>
             <td>
               <div class="client-cell">
                 <div class="cl-av">{{ client.nom.charAt(0).toUpperCase() }}</div>
