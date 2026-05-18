@@ -53,6 +53,7 @@ model Client {
   factures        Facture[]
   proformas       FactureProforma[]
   prixSpecifiques PrixClient[]
+  files           Clientfile[]
 
   @@map("clients")
 }
@@ -227,4 +228,19 @@ model PrixClient {
 
   @@unique([clientId, produitId])
   @@map("prix_client")
+}
+
+//========== Client Files ==================
+model Clientfile {
+  id        Int @id @default(autoincrement())
+  clientId  Int  @map("cleint_id")
+  nom       String 
+  nomFichier String
+  chemin     String
+  type       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_files")
 }
