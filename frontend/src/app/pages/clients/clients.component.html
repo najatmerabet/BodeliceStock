@@ -100,6 +100,9 @@
             <td>{{ client.ville || '-' }}</td>
             <td class="tc">
               <div class="row-acts">
+                <button class="act-btn act-releve" (click)="openReleveModal(client)" title="Relevé de compte">
+                  <span class="material-symbols-rounded">receipt_long</span>
+                </button>
                 <button class="act-btn act-edit" (click)="openEdit(client)" title="Modifier">
                   <span class="material-symbols-rounded">edit</span>
                 </button>
@@ -180,7 +183,10 @@
       </div>
       <div class="fld">
         <label>Ville</label>
-        <input type="text" [(ngModel)]="form.ville" placeholder="Ex: Tanger">
+        <input type="text" [(ngModel)]="form.ville" list="villes-list" placeholder="Ex: Tanger" autocomplete="off">
+        <datalist id="villes-list">
+          <option *ngFor="let v of VILLES_MAROC" [value]="v"></option>
+        </datalist>
       </div>
       <div class="fld">
         <label>Code Postal</label>
@@ -223,5 +229,70 @@
       </button>
     </div>
 
+  </div>
+</div>
+
+<!-- Modal Relevé de Compte -->
+<div *ngIf="showReleveModal" class="overlay" (click)="closeReleveModal()">
+  <div class="modal-box modal-releve" (click)="$event.stopPropagation()">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; border-radius: 12px 12px 0 0; padding: 18px 20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-symbols-rounded" style="font-size:22px;">receipt_long</span>
+        <div>
+          <h3 style="margin:0;font-size:1rem;font-weight:800;">Relevé de Compte</h3>
+          <p style="margin:0;font-size:0.78rem;opacity:0.85;">{{ releveClient?.nom }}</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closeReleveModal()" style="color:#fff;">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <p style="color:#64748B;font-size:0.85rem;margin:0 0 16px;">Choisissez la période pour le relevé des factures non soldées.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="fld">
+          <label style="font-size:0.8rem;font-weight:700;color:#374151;">Date de début</label>
+          <input type="date" [(ngModel)]="releveDateFrom" style="width:100%;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem;">
+        </div>
+        <div class="fld">
+          <label style="font-size:0.8rem;font-weight:700;color:#374151;">Date de fin</label>
+          <input type="date" [(ngModel)]="releveDateTo" style="width:100%;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem;">
+        </div>
+      </div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-top:14px;display:flex;gap:8px;align-items:center;">
+        <span class="material-symbols-rounded" style="font-size:18px;color:#2563EB;">info</span>
+        <span style="font-size:0.8rem;color:#1E40AF;">Sans filtre de date, <strong>toutes les factures</strong> sont affichées. Remplissez les dates pour filtrer une période précise.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" (click)="closeReleveModal()">Annuler</button>
+      <button class="btn-primary" (click)="generateReleve()" [disabled]="generatingReleve"
+        style="background:linear-gradient(135deg,#1e3a8a,#2563eb);display:flex;align-items:center;gap:8px;">
+        <span class="material-symbols-rounded" style="font-size:18px;">{{ generatingReleve ? 'hourglass_empty' : 'picture_as_pdf' }}</span>
+        {{ generatingReleve ? 'Génération...' : 'Générer le PDF' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div *ngIf="pdfPreviewUrl" class="overlay" style="z-index:1100;">
+  <div class="modal-box" style="width:90vw;max-width:1100px;height:90vh;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;" (click)="$event.stopPropagation()">
+    <div class="modal-header" style="background:#0F172A;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-symbols-rounded" style="color:#EF4444;">picture_as_pdf</span>
+        <span style="font-weight:700;font-size:0.95rem;">{{ pdfPreviewName }}</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button (click)="downloadPdf()" style="background:#2563EB;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:700;">
+          <span class="material-symbols-rounded" style="font-size:18px;">download</span>
+          Télécharger
+        </button>
+        <button (click)="closePdfPreview()" style="background:#374151;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">
+          <span class="material-symbols-rounded" style="font-size:18px;">close</span>
+        </button>
+      </div>
+    </div>
+    <iframe [src]="pdfPreviewUrl" style="flex:1;border:none;width:100%;"></iframe>
   </div>
 </div>

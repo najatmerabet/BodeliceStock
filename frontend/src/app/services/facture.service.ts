@@ -60,4 +60,13 @@ export class FactureService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  getReleveClient(clientId: number, dateFrom?: string, dateTo?: string): Observable<any> {
+    let url = `${this.apiUrl}/releve/${clientId}`;
+    const params: string[] = [];
+    if (dateFrom) params.push(`dateFrom=${dateFrom}`);
+    if (dateTo) params.push(`dateTo=${dateTo}`);
+    if (params.length) url += '?' + params.join('&');
+    return this.http.get<any>(url);
+  }
 }

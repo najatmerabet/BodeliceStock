@@ -59,6 +59,7 @@
   .material-symbols-rounded { font-size: 16px; color: #94A3B8; }
   &.act-edit:hover { background: #EFF6FF; border-color: #BFDBFE; .material-symbols-rounded { color: #2563EB; } }
   &.act-del:hover { background: #FEF2F2; border-color: #FECACA; .material-symbols-rounded { color: #DC2626; } }
+  &.act-releve:hover { background: #EFF6FF; border-color: #93C5FD; .material-symbols-rounded { color: #1D4ED8; } }
 }
 .tc { text-align: center; }
 
@@ -71,6 +72,7 @@
 .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s; }
 .modal-box { background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); width: 90%; max-width: 480px; animation: pop 0.25s ease; overflow: hidden; }
 .modal-sm { max-width: 380px; }
+.modal-releve { max-width: 500px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #F1F5F9;
   h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0F172A; }
 }

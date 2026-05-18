@@ -26,6 +26,82 @@ router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextF
   } catch (error) { next(error); }
 });
 
+// GET /bon-charge?date=YYYY-MM-DD — Agrège tous les produits de tous les BLs du jour
+router.get('/bon-charge', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateParam = req.query.date ? String(req.query.date) : new Date().toISOString().slice(0, 10);
+    const dayStart = new Date(dateParam);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dateParam);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const bls = await prisma.bonLivraison.findMany({
+      where: { date: { gte: dayStart, lte: dayEnd } },
+      include: {
+        client: true,
+        lignes: { include: { produit: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    // Agréger les produits (total par produit + détail par BL)
+    const produitsMap = new Map<number, {
+      produitId: number;
+      reference: string;
+      nom: string;
+      unite: string;
+      totalNbUnites: number;
+      totalPoids: number;
+      details: { blNumero: string; clientNom: string; nbUnites: number; poids: number }[];
+    }>();
+
+    for (const bl of bls) {
+      for (const ligne of bl.lignes) {
+        const pid = ligne.produitId;
+        if (!produitsMap.has(pid)) {
+          produitsMap.set(pid, {
+            produitId: pid,
+            reference: ligne.produit.reference,
+            nom: ligne.produit.nom,
+            unite: ligne.produit.unite,
+            totalNbUnites: 0,
+            totalPoids: 0,
+            details: [],
+          });
+        }
+        const entry = produitsMap.get(pid)!;
+        const nbUnites = Number(ligne.nbUnites || 1);
+        const poids = Number(ligne.quantite);
+        entry.totalNbUnites += nbUnites;
+        entry.totalPoids += poids;
+        entry.details.push({
+          blNumero: bl.numero,
+          clientNom: bl.client.nom,
+          nbUnites,
+          poids,
+        });
+      }
+    }
+
+    const produits = Array.from(produitsMap.values()).sort((a, b) =>
+      a.reference.localeCompare(b.reference)
+    );
+
+    const totalBls = bls.length;
+    const totalPoids = produits.reduce((s, p) => s + p.totalPoids, 0);
+
+    res.json({
+      date: dateParam,
+      bls: bls.map(b => ({ id: b.id, numero: b.numero, client: b.client.nom, total: Number(b.total) })),
+      produits,
+      totaux: { totalBls, totalPoids },
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) { next(error); }
+});
+
+
+
 // GET /:id — Un BL avec ses lignes
 router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
