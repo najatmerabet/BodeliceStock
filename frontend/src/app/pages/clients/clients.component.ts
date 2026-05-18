@@ -80,7 +80,13 @@ pendingClientFiles: {
     return arr;
   }
 
-  constructor(private clientsService: ClientsService, private cdr: ChangeDetectorRef, private clientFichiersService: ClientFichiersService) {}
+  constructor(
+    private clientsService: ClientsService,
+    private cdr: ChangeDetectorRef,
+    private clientFichiersService: ClientFichiersService,
+    private factureService: FactureService,
+    private sanitizer: DomSanitizer,
+  ) {}
   // Autocomplete Ville
   readonly VILLES_MAROC = [
     'Tanger','Tétouan','Al Hoceima','Larache','Asilah','Chefchaouen','Fnideq','Martil',
@@ -111,12 +117,7 @@ pendingClientFiles: {
     this.cdr.markForCheck();
   }
 
-  constructor(
-    private clientsService: ClientsService,
-    private factureService: FactureService,
-    private cdr: ChangeDetectorRef,
-    private sanitizer: DomSanitizer
-  ) {}
+
 
   ngOnInit(): void {
     this.loadClients();
