@@ -144,7 +144,7 @@ model Facture {
   reste             Decimal          @default(0) @db.Decimal(10, 2)
   statut            String           @default("impayée")
   type              String           @default("NORMALE") // NORMALE | HISTORIQUE
-  referenceExterne  String?          // Référence dans l'ancien système
+  referenceExterne  String?          @map("reference_externe") // Référence dans l'ancien système
   client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   proforma          FactureProforma? @relation(fields: [proformaId], references: [id])
   bonsLivraison     BonLivraison[]
