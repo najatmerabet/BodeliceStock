@@ -21,6 +21,7 @@ declare const window: any;
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './bons-livraison.component.html',
   styleUrl: './bons-livraison.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BonsLivraisonComponent implements OnInit {
   bls: BonLivraison[] = [];
@@ -51,6 +52,14 @@ export class BonsLivraisonComponent implements OnInit {
   pdfPreviewUrl: SafeResourceUrl | null = null;
   pdfPreviewBlobUrl: string | null = null;
   pdfPreviewName = '';
+
+  // Bon de Charge
+  showBonChargeModal = false;
+  bonChargeDate = new Date().toISOString().slice(0, 10);
+  generatingBonCharge = false;
+  bonChargePdfUrl: SafeResourceUrl | null = null;
+  bonChargePdfBlobUrl: string | null = null;
+  bonChargePdfName = '';
 
   // Create form state
   form = {
@@ -877,5 +886,229 @@ export class BonsLivraisonComponent implements OnInit {
 
   getBlTotal(): number {
     return this.bls.reduce((sum, bl) => sum + (Number(bl.total) || 0), 0);
+  }
+
+  // ══════════════════════════════════
+  // BON DE CHARGE
+  // ══════════════════════════════════
+
+  openBonChargeModal(): void {
+    this.bonChargeDate = new Date().toISOString().slice(0, 10);
+    this.showBonChargeModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeBonChargeModal(): void {
+    this.showBonChargeModal = false;
+    this.cdr.markForCheck();
+  }
+
+  closeBonChargePdf(): void {
+    if (this.bonChargePdfBlobUrl) URL.revokeObjectURL(this.bonChargePdfBlobUrl);
+    this.bonChargePdfUrl = null;
+    this.bonChargePdfBlobUrl = null;
+    this.cdr.markForCheck();
+  }
+
+  downloadBonChargePdf(): void {
+    if (!this.bonChargePdfBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = this.bonChargePdfBlobUrl;
+    a.download = this.bonChargePdfName;
+    a.click();
+  }
+
+  async generateBonCharge(): Promise<void> {
+    this.generatingBonCharge = true;
+    this.showBonChargeModal = false;
+    this.cdr.markForCheck();
+
+    try {
+      const data: any = await new Promise((resolve, reject) => {
+        this.blService.getBonCharge(this.bonChargeDate)
+          .subscribe({ next: resolve, error: reject });
+      });
+
+      const jspdfModule = await import('jspdf');
+      const autotableModule = await import('jspdf-autotable');
+      const jsPDF = jspdfModule.default || (jspdfModule as any).jsPDF;
+      const autoTable = autotableModule.default || (autotableModule as any).autoTable;
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210, H = 297, ML = 14, MR = 14;
+
+      const NOIR:   [number,number,number] = [20, 20, 20];
+      const GRIS:   [number,number,number] = [100, 116, 139];
+      const WHITE:  [number,number,number] = [255, 255, 255];
+      const LIGHT:  [number,number,number] = [248, 250, 252];
+      const BORDER: [number,number,number] = [210, 218, 230];
+      const DARK:   [number,number,number] = [30, 41, 59];  // slate-800
+
+      // ── EN-TÊTE : fond blanc, pas de couleur ──
+      // Ligne de séparation en bas de l'en-tête
+      doc.setDrawColor(...BORDER); doc.setLineWidth(0.4);
+      doc.line(ML, 30, W - MR, 30);
+
+      // Logo
+      try {
+        const logoImg = new Image();
+        logoImg.src = 'assets/logo.png';
+        await new Promise<void>((r) => { logoImg.onload = () => r(); setTimeout(r, 500); });
+        if (logoImg.complete) doc.addImage(logoImg, 'PNG', ML, 5, 20, 20);
+      } catch {}
+
+      // Société — texte sombre sur fond blanc
+      doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
+      doc.text('PRODMEAT', ML + 24, 13);
+      doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRIS);
+      doc.text('Bd Mly Ismail Rés Mly Ismail N°22 Etg 5 - N 19 - Tanger', ML + 24, 18);
+      doc.text('Tél : 06 66 57 03 03   |   ICE : 003291478000039', ML + 24, 22.5);
+
+      // Titre "BON DE CHARGE" à droite — encadré avec bordure sombre, fond blanc
+      doc.setDrawColor(...DARK); doc.setLineWidth(0.5);
+      doc.rect(W - MR - 55, 5, 55, 22, 'S');
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
+      doc.text('BON DE CHARGE', W - MR - 27.5, 13, { align: 'center' });
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRIS);
+      const dateLabel = new Date(this.bonChargeDate + 'T12:00:00')
+        .toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+      doc.text(dateLabel, W - MR - 27.5, 22, { align: 'center' });
+
+      // ── BANDE STATS ──
+      let Y = 36;
+      doc.setFillColor(...LIGHT); doc.setDrawColor(...BORDER); doc.setLineWidth(0.25);
+      doc.rect(ML, Y, W - ML - MR, 12, 'FD');
+      const stats = [
+        { label: 'BLs du jour',       val: String(data.totaux.totalBls) },
+        { label: 'Produits différents', val: String(data.produits.length) },
+        { label: 'Poids total',        val: Number(data.totaux.totalPoids).toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' kg' },
+        { label: 'Édité à',            val: new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) },
+      ];
+      const colW = (W - ML - MR) / stats.length;
+      stats.forEach((s, i) => {
+        const cx = ML + colW * i + colW / 2;
+        doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
+        doc.text(s.val, cx, Y + 5.5, { align: 'center' });
+        doc.setFontSize(5.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRIS);
+        doc.text(s.label.toUpperCase(), cx, Y + 10, { align: 'center' });
+        if (i < stats.length - 1) {
+          doc.setDrawColor(...BORDER);
+          doc.line(ML + colW * (i + 1), Y + 1, ML + colW * (i + 1), Y + 11);
+        }
+      });
+
+      Y += 18;
+
+      // ── SECTION PRODUITS À CHARGER ──
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DARK);
+      doc.text('Produits à charger', ML, Y + 4);
+      Y += 8;
+
+      // Une ligne par produit avec total + numéros de BL
+      const prodRows = (data.produits || []).map((p: any, i: number) => [
+        String(i + 1),
+        p.reference,
+        p.nom,
+        p.unite || 'u',
+        String(p.totalNbUnites),
+        Number(p.totalPoids).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' kg',
+        p.details.map((d: any) => d.blNumero).join(', '),
+      ]);
+
+      const totalPoids = Number(data.totaux.totalPoids);
+      const totalUnites = (data.produits || []).reduce((s: number, p: any) => s + p.totalNbUnites, 0);
+
+      // Ligne TOTAL ajoutée dans le body
+      prodRows.push([
+        '',
+        '',
+        'TOTAL',
+        '',
+        String(totalUnites),
+        totalPoids.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' kg',
+        '',
+      ]);
+
+      autoTable(doc, {
+        startY: Y,
+        margin: { left: ML, right: MR },
+        head: [['#', 'Réf.', 'Désignation', 'Unité', 'Nb Unités', 'Poids Total', 'N° BLs']],
+        body: prodRows,
+        theme: 'plain',
+        styles: {
+          textColor: NOIR,
+          lineColor: BORDER,
+          lineWidth: 0.2,
+          fontSize: 9,
+          cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+          valign: 'middle' as const,
+        },
+        headStyles: {
+          fillColor: DARK,
+          textColor: WHITE,
+          fontStyle: 'bold',
+          fontSize: 8,
+          cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 8,               halign: 'center' as const, textColor: GRIS },
+          1: { cellWidth: 22,              halign: 'left' as const, fontStyle: 'bold' },
+          2: { cellWidth: 48,              halign: 'left' as const },
+          3: { cellWidth: 14,              halign: 'center' as const, textColor: GRIS },
+          4: { cellWidth: 20,              halign: 'center' as const, fontStyle: 'bold' },
+          5: { cellWidth: 28,              halign: 'right' as const, fontStyle: 'bold' },
+          6: { cellWidth: 'auto' as const, halign: 'left' as const, textColor: GRIS, fontSize: 7.5 },
+        },
+        didParseCell: (cellData: any) => {
+          // Dernière ligne = ligne TOTAL
+          if (cellData.section === 'body' && cellData.row.index === prodRows.length - 1) {
+            cellData.cell.styles.fillColor = [234, 234, 240];
+            cellData.cell.styles.fontStyle = 'bold';
+            cellData.cell.styles.fontSize = 9;
+            cellData.cell.styles.textColor = DARK;
+          }
+        },
+      });
+
+
+      // ── SIGNATURES ──
+      const sigY = (doc as any).lastAutoTable.finalY + 12;
+      const sigW = 60;
+      doc.setDrawColor(...BORDER); doc.setLineWidth(0.3);
+      doc.rect(ML, sigY, sigW, 18, 'D');
+      doc.rect(W - MR - sigW, sigY, sigW, 18, 'D');
+      doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...GRIS);
+      doc.text('Signature Responsable', ML + sigW / 2, sigY + 5, { align: 'center' });
+      doc.text('Signature Chauffeur', W - MR - sigW / 2, sigY + 5, { align: 'center' });
+
+      // ── MESSAGE VIDE ──
+      if (data.produits.length === 0) {
+        doc.setFontSize(12); doc.setTextColor(...GRIS); doc.setFont('helvetica', 'italic');
+        doc.text('Aucun BL enregistré pour cette date', W / 2, 160, { align: 'center' });
+      }
+
+      // ── FOOTER (identique aux autres factures) ──
+      const FY = H - 16;
+      doc.setDrawColor(...BORDER); doc.setLineWidth(0.3);
+      doc.line(ML, FY, W - MR, FY);
+      doc.setFontSize(6.2); doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRIS);
+      doc.text('PRODMEAT - Bd mly Ismail res mly Ismail N°22 etg 5 - N 19 - TANGER', W / 2, FY + 4, { align: 'center' });
+      doc.text('ICE : 003291478000039   R.C: 1328011   CNSS 4810442   Patente: 57225884   IF: 53783148', W / 2, FY + 8, { align: 'center' });
+      doc.text('Attijariwafa Bank   007 640 00 14335000003128 43', W / 2, FY + 12, { align: 'center' });
+
+      const pdfBlob = doc.output('blob');
+      if (this.bonChargePdfBlobUrl) URL.revokeObjectURL(this.bonChargePdfBlobUrl);
+      this.bonChargePdfBlobUrl = URL.createObjectURL(pdfBlob);
+      this.bonChargePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.bonChargePdfBlobUrl);
+      this.bonChargePdfName = `BON_CHARGE_${this.bonChargeDate}.pdf`;
+
+    } catch (err) {
+      console.error('Erreur bon de charge:', err);
+      this.showMessage('Erreur génération Bon de Charge', 'error');
+    } finally {
+      this.generatingBonCharge = false;
+      this.cdr.markForCheck();
+    }
   }
 }

@@ -18,10 +18,16 @@
           <p>Gérez et suivez tous vos bons de livraison</p>
         </div>
       </div>
-      <button class="btn-create" (click)="openCreate()">
-        <span class="material-symbols-rounded">add</span>
-        Nouveau BL
-      </button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-create" style="background:#334155;" (click)="openBonChargeModal()" [disabled]="generatingBonCharge">
+          <span class="material-symbols-rounded">{{ generatingBonCharge ? 'hourglass_empty' : 'local_shipping' }}</span>
+          {{ generatingBonCharge ? 'Génération...' : 'Bon de Charge' }}
+        </button>
+        <button class="btn-create" (click)="openCreate()">
+          <span class="material-symbols-rounded">add</span>
+          Nouveau BL
+        </button>
+      </div>
     </div>
 
     <!-- Stats Row -->
@@ -665,4 +671,62 @@
     </div>
   </div>
 
+</div>
+
+<!-- ═══ BON DE CHARGE MODAL ═══ -->
+<div *ngIf="showBonChargeModal" class="overlay" (click)="closeBonChargeModal()">
+  <div class="modal-box" style="max-width:420px;" (click)="$event.stopPropagation()">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1E293B,#334155);color:#fff;border-radius:12px 12px 0 0;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-symbols-rounded" style="font-size:22px;">local_shipping</span>
+        <div>
+          <h3 style="margin:0;font-size:1rem;font-weight:800;">Bon de Charge</h3>
+          <p style="margin:0;font-size:0.78rem;opacity:0.7;">Fiche de chargement du jour</p>
+        </div>
+      </div>
+      <button style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;" (click)="closeBonChargeModal()">
+        <span class="material-symbols-rounded" style="font-size:18px;color:#fff;">close</span>
+      </button>
+    </div>
+    <div style="padding:24px;">
+      <p style="color:#64748B;font-size:0.85rem;margin:0 0 16px;">Choisissez la date pour générer le bon de charge.</p>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:#374151;margin-bottom:6px;">Date</label>
+        <input type="date" [(ngModel)]="bonChargeDate" style="width:100%;padding:10px 14px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:0.9rem;font-family:inherit;">
+      </div>
+      <div style="background:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;display:flex;gap:8px;align-items:center;">
+        <span class="material-symbols-rounded" style="font-size:18px;color:#475569;">info</span>
+        <span style="font-size:0.8rem;color:#475569;">Le document récapitule <strong>tous les produits</strong> de tous les BLs de la date choisie.</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:flex-end;padding:20px 24px;border-top:1px solid #F1F5F9;background:#F8FAFC;">
+      <button class="btn-sec" (click)="closeBonChargeModal()">Annuler</button>
+      <button class="btn-create" style="background:#1E293B;" (click)="generateBonCharge()" [disabled]="generatingBonCharge">
+        <span class="material-symbols-rounded" style="font-size:18px;">{{ generatingBonCharge ? 'hourglass_empty' : 'picture_as_pdf' }}</span>
+        {{ generatingBonCharge ? 'Génération...' : 'Générer le PDF' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BON DE CHARGE PDF PREVIEW ═══ -->
+<div *ngIf="bonChargePdfUrl" class="overlay" style="z-index:1100;">
+  <div class="modal-box" style="width:90vw;max-width:900px;height:90vh;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;" (click)="$event.stopPropagation()">
+    <div style="background:#0F172A;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-symbols-rounded" style="color:#F97316;">picture_as_pdf</span>
+        <span style="font-weight:700;font-size:0.95rem;">{{ bonChargePdfName }}</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button (click)="downloadBonChargePdf()" style="background:#EA580C;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:700;">
+          <span class="material-symbols-rounded" style="font-size:18px;">download</span>
+          Télécharger
+        </button>
+        <button (click)="closeBonChargePdf()" style="background:#374151;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">
+          <span class="material-symbols-rounded" style="font-size:18px;">close</span>
+        </button>
+      </div>
+    </div>
+    <iframe [src]="bonChargePdfUrl" style="flex:1;border:none;width:100%;"></iframe>
+  </div>
 </div>

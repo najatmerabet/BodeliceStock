@@ -27,4 +27,9 @@ export class BonLivraisonService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
   }
+
+  getBonCharge(date?: string): Observable<any> {
+    const param = date || new Date().toISOString().slice(0, 10);
+    return this.http.get<any>(`${this.api}/bon-charge?date=${param}`);
+  }
 }

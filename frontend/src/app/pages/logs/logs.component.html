@@ -1,10 +1,11 @@
 <div class="logs-container">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
   <!-- Header -->
   <div class="logs-header">
     <div>
       <h2>Activités récentes</h2>
-      <p>{{ filteredLogs.length }} entrées</p>
+      <p>{{ totalCount }} entrées · {{ totalPages }} page{{ totalPages > 1 ? 's' : '' }}</p>
     </div>
 
     <div class="search-wrapper">
@@ -14,9 +15,20 @@
         placeholder="Rechercher..."
         class="search-input"
         [(ngModel)]="searchQuery"
-        (input)="applyFilters()"
+        (input)="applyLocalFilters()"
       />
     </div>
+  </div>
+
+  <!-- Date Filters -->
+  <div class="date-filters">
+    <span class="filter-label">Date :</span>
+    <input type="date" [(ngModel)]="filterDateFrom" (change)="onDateFilterChange()" />
+    <span class="filter-sep">→</span>
+    <input type="date" [(ngModel)]="filterDateTo" (change)="onDateFilterChange()" />
+    <button class="btn-clear" *ngIf="filterDateFrom || filterDateTo" (click)="filterDateFrom=''; filterDateTo=''; onDateFilterChange()">
+      <span class="material-symbols-rounded">close</span>
+    </button>
   </div>
 
   <!-- Filters -->
@@ -32,50 +44,70 @@
     </button>
   </div>
 
-  <!-- Timeline -->
+  <!-- Timeline with Date Groups -->
   <div class="timeline">
-    <div
-      *ngFor="let log of filteredLogs; trackBy: trackByLog"
-      class="timeline-item"
-      [ngClass]="log.action"
-    >
-      <div class="timeline-marker"></div>
+    <ng-container *ngFor="let group of groupedLogs">
+      <div class="date-header">{{ group.label }}</div>
+      <div
+        *ngFor="let log of group.logs; trackBy: trackByLog"
+        class="timeline-item"
+        [ngClass]="log.action"
+      >
+        <div class="timeline-marker"></div>
 
-      <div class="log-card">
-
-        <!-- Avatar -->
-        <div class="avatar">
-          {{ log.user.email[0] | uppercase }}
-        </div>
-
-        <!-- Info utilisateur -->
-        <div class="user-info">
-          <div class="email">{{ log.user.email }}</div>
-          <div class="time">{{ log.createdAt | date:'HH:mm' }}</div>
-        </div>
-
-        <!-- Description -->
-        <div class="center">
-          <div class="entity-row">
-            Sur&nbsp;
-            <span class="entity-badge">{{ log.entity }}</span>
+        <div class="log-card">
+          <!-- Avatar -->
+          <div class="avatar">
+            {{ (log.user?.email || 'U')[0] | uppercase }}
           </div>
-          <div class="description">{{ log.description }}</div>
-        </div>
 
-        <!-- Badge action -->
-        <div class="right">
-          <span class="action-badge">{{ log.action }}</span>
-        </div>
+          <!-- Info utilisateur -->
+          <div class="user-info">
+            <div class="email">{{ log.user?.email || 'Unknown' }}</div>
+            <div class="time">{{ log.createdAt | date:'HH:mm' }}</div>
+          </div>
 
+          <!-- Description -->
+          <div class="center">
+            <div class="entity-row">
+              Sur&nbsp;
+              <span class="entity-badge">{{ log.entity }}</span>
+            </div>
+            <div class="description">{{ log.description }}</div>
+          </div>
+
+          <!-- Badge action -->
+          <div class="right">
+            <span class="action-badge">{{ log.action }}</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </ng-container>
 
     <!-- Empty state -->
     <div class="empty-state" *ngIf="filteredLogs.length === 0">
       <span class="material-symbols-outlined">manage_search</span>
       <p>Aucune activité trouvée</p>
     </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+      <span class="material-symbols-rounded">chevron_left</span>
+    </button>
+    <button
+      *ngFor="let p of pageNumbers"
+      class="page-btn"
+      [class.active]="p === currentPage"
+      (click)="setPage(p)"
+    >
+      {{ p }}
+    </button>
+    <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+      <span class="material-symbols-rounded">chevron_right</span>
+    </button>
+    <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
   </div>
 
 </div>

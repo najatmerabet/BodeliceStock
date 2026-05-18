@@ -28,6 +28,53 @@ router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextF
   }
 });
 
+// GET /api/factures/releve/:clientId?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD
+// Retourne TOUTES les factures d'un client (pour le relevé de compte)
+router.get('/releve/:clientId', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientId = parseInt(String(req.params.clientId));
+    const { dateFrom, dateTo } = req.query;
+
+    const where: any = { clientId };
+
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = new Date(String(dateFrom));
+      if (dateTo) {
+        const end = new Date(String(dateTo));
+        end.setHours(23, 59, 59, 999);
+        where.date.lte = end;
+      }
+    }
+
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) {
+      res.status(404).json({ error: 'Client non trouvé' });
+      return;
+    }
+
+    const factures = await prisma.facture.findMany({
+      where,
+      include: { paiements: { orderBy: { date: 'asc' } } },
+      orderBy: { date: 'asc' },
+    });
+
+    const totalFacture = factures.reduce((s, f) => s + Number(f.total), 0);
+    const totalPaye   = factures.reduce((s, f) => s + Number(f.paye),  0);
+    const totalReste  = factures.reduce((s, f) => s + Number(f.reste), 0);
+
+    res.json({
+      client,
+      factures,
+      totaux: { totalFacture, totalPaye, totalReste },
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 // GET /api/factures/:id — Une facture avec ses BLs et produits
 router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

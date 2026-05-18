@@ -18,6 +18,14 @@ export class LogsComponent implements OnInit {
   searchQuery = '';
   activeFilter = 'ALL';
 
+  filterDateFrom = '';
+  filterDateTo = '';
+
+  currentPage = 1;
+  pageSize = 20;
+  totalPages = 1;
+  totalCount = 0;
+
   filterOptions = [
     { label: 'TOUS',   value: 'ALL'    },
     { label: 'CREATE', value: 'CREATE' },
@@ -35,10 +43,27 @@ export class LogsComponent implements OnInit {
   }
 
   loadLogs(): void {
-    this.logsService.getAll().subscribe({
-      next: (data) => {
-        this.logs = data;
-        this.applyFilters();
+    const params: any = {
+      page: this.currentPage,
+      pageSize: this.pageSize,
+    };
+
+    if (this.activeFilter !== 'ALL') {
+      params.action = this.activeFilter;
+    }
+    if (this.filterDateFrom) {
+      params.startDate = this.filterDateFrom;
+    }
+    if (this.filterDateTo) {
+      params.endDate = this.filterDateTo;
+    }
+
+    this.logsService.getLogs(params).subscribe({
+      next: (result) => {
+        this.logs = result.data || [];
+        this.totalCount = result.total || 0;
+        this.totalPages = result.totalPages || 1;
+        this.applyLocalFilters();
         this.cdr.detectChanges();
       },
       error: (err) => console.error(err),
@@ -47,26 +72,85 @@ export class LogsComponent implements OnInit {
 
   setFilter(value: string): void {
     this.activeFilter = value;
-    this.applyFilters();
+    this.currentPage = 1;
+    this.loadLogs();
   }
 
-  applyFilters(): void {
-    let result = [...this.logs];
+  onDateFilterChange(): void {
+    this.currentPage = 1;
+    this.loadLogs();
+  }
 
-    if (this.activeFilter !== 'ALL') {
-      result = result.filter(l => l.action === this.activeFilter);
-    }
+  applyLocalFilters(): void {
+    const logs = this.logs || [];
+    let result = [...logs];
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       result = result.filter(l =>
-        l.user.email.toLowerCase().includes(q) ||
-        l.entity.toLowerCase().includes(q) ||
-        l.description.toLowerCase().includes(q),
+        (l.user?.email || '').toLowerCase().includes(q) ||
+        (l.entity || '').toLowerCase().includes(q) ||
+        (l.description || '').toLowerCase().includes(q),
       );
     }
 
     this.filteredLogs = result;
+  }
+
+  setPage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadLogs();
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadLogs();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadLogs();
+    }
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, start + 4);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  getDateLabel(dateStr: string): string {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "AUJOURD'HUI";
+    if (date.toDateString() === yesterday.toDateString()) return "HIER";
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+  }
+
+  get groupedLogs(): { date: string; label: string; logs: any[] }[] {
+    const logs = this.filteredLogs || [];
+    const groups: { [key: string]: any[] } = {};
+    logs.forEach(log => {
+      const dateKey = new Date(log.createdAt).toDateString();
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(log);
+    });
+    return Object.entries(groups).map(([date, logsArr]) => ({
+      date,
+      label: this.getDateLabel(date),
+      logs: logsArr,
+    }));
   }
 
   trackByLog(index: number, log: any): any {

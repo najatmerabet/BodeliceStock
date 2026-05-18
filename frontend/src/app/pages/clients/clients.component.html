@@ -134,8 +134,8 @@
             <td>{{ client.ville || '-' }}</td>
             <td class="tc">
               <div class="row-acts">
-                <button class="act-btn" style="color:#059669;" (click)="openFichiers(client)" title="Fichiers">
-                  <span class="material-symbols-rounded">folder</span>
+                <button class="act-btn act-releve" (click)="openReleveModal(client)" title="Relevé de compte">
+                  <span class="material-symbols-rounded">receipt_long</span>
                 </button>
                 <button class="act-btn act-edit" (click)="openEdit(client)" title="Modifier">
                   <span class="material-symbols-rounded">edit</span>
@@ -259,13 +259,12 @@
           </div>
         </div>
       </div>
-
-      <!-- Séparateur fichiers -->
-      <div class="section-divider">
-        <span>Fichiers joints</span>
-        <span *ngIf="pendingClientFiles.length > 0" class="files-badge">
-          {{ pendingClientFiles.length }}
-        </span>
+      <div class="fld">
+        <label>Ville</label>
+        <input type="text" [(ngModel)]="form.ville" list="villes-list" placeholder="Ex: Tanger" autocomplete="off">
+        <datalist id="villes-list">
+          <option *ngFor="let v of VILLES_MAROC" [value]="v"></option>
+        </datalist>
       </div>
 
       <!-- Drop zone -->
