@@ -5,7 +5,7 @@ import { ClientFileItem } from '../models/client-file.model';
 
 @Injectable({ providedIn: 'root' })
 export class ClientFilesService {
-  private base = 'http://localhost:3000/api/clients';
+  private base = '/api/clients';
 
   constructor(private http: HttpClient) {}
 
