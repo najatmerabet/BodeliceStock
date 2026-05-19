@@ -54,6 +54,7 @@ model Client {
   proformas       FactureProforma[]
   prixSpecifiques PrixClient[]
   files           Clientfile[]
+  folders         ClientFolder[]
 
   @@map("clients")
 }
@@ -232,17 +233,38 @@ model PrixClient {
   @@map("prix_client")
 }
 
+//========== Client Folders ==================
+model ClientFolder {
+  id        Int    @id @default(autoincrement())
+  clientId  Int    @map("client_id")
+  parentId  Int?   @map("parent_id")
+  nom       String
+  couleur   String @default("#6B7280")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  parent    ClientFolder? @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ClientFolder[] @relation("FolderHierarchy")
+  files     Clientfile[]
+
+  @@map("client_folders")
+}
+
 //========== Client Files ==================
 model Clientfile {
-  id        Int @id @default(autoincrement())
-  clientId  Int  @map("cleint_id")
+  id        Int    @id @default(autoincrement())
+  clientId  Int    @map("client_id")
+  folderId  Int?   @map("folder_id")
   nom       String 
   nomFichier String
+  remarque   String?
   chemin     String
   type       String
+  taille     Int?   @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  folder     ClientFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@map("client_files")
 }

@@ -1,0 +1,177 @@
+<div class="detail-layout" *ngIf="!loading && client">
+
+  <!-- Toast -->
+  <div *ngIf="toast" class="toast" [class.toast-ok]="toastType === 'ok'" [class.toast-err]="toastType === 'err'">
+    <span class="material-symbols-rounded">{{ toastType === 'ok' ? 'check_circle' : 'error' }}</span>
+    {{ toast }}
+  </div>
+
+  <!-- ══ LEFT SIDEBAR ══ -->
+  <aside class="sidebar">
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <div class="profile-avatar">{{ client.nom.charAt(0).toUpperCase() }}</div>
+      <h2 class="profile-name">{{ client.nom }}</h2>
+      <span class="profile-ref">{{ client.reference || 'Sans réf.' }}</span>
+    </div>
+
+    <!-- Info Fields -->
+    <div class="info-list">
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">person</span>
+        <div class="if-data">
+          <span class="if-label">Nom</span>
+          <span class="if-value">{{ client.nom || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">tag</span>
+        <div class="if-data">
+          <span class="if-label">Référence</span>
+          <span class="if-value">{{ client.reference || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">badge</span>
+        <div class="if-data">
+          <span class="if-label">ICE</span>
+          <span class="if-value">{{ client.ice || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">mail</span>
+        <div class="if-data">
+          <span class="if-label">Email</span>
+          <span class="if-value">{{ client.email || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">phone</span>
+        <div class="if-data">
+          <span class="if-label">Téléphone</span>
+          <span class="if-value">{{ client.telephone || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">location_on</span>
+        <div class="if-data">
+          <span class="if-label">Adresse</span>
+          <span class="if-value">{{ client.adresse || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">location_city</span>
+        <div class="if-data">
+          <span class="if-label">Ville</span>
+          <span class="if-value">{{ client.ville || '-' }}</span>
+        </div>
+      </div>
+      <div class="info-field">
+        <span class="material-symbols-rounded if-icon">markunread_mailbox</span>
+        <div class="if-data">
+          <span class="if-label">Code Postal</span>
+          <span class="if-value">{{ client.codepostal || '-' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="back-link" (click)="goBack()">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Retour aux clients
+    </button>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="main-content">
+
+    <!-- Top Bar: Tabs + Actions -->
+    <div class="top-bar">
+      <div class="tab-pills">
+        <button class="pill" [class.active]="activeTab === 'info'" (click)="activeTab = 'info'">
+          ✏️ Modifier
+        </button>
+        <button class="pill" [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
+          📁 Fichiers
+        </button>
+      </div>
+    </div>
+
+    <!-- Pane -->
+    <div class="main-pane">
+
+      <!-- Edit Tab -->
+      <div *ngIf="activeTab === 'info'">
+        <div *ngIf="!editMode" class="placeholder-view">
+          <div class="ph-icon">
+            <span class="material-symbols-rounded">person</span>
+          </div>
+          <h3>Fiche client</h3>
+          <p>Cliquez sur <strong>Modifier</strong> pour mettre à jour les informations.</p>
+          <button class="btn-edit-start" (click)="toggleEdit()">
+            <span class="material-symbols-rounded">edit</span>
+            Modifier le client
+          </button>
+        </div>
+
+        <div *ngIf="editMode" class="edit-form">
+          <div class="ef-header">
+            <h3>✏️ Modifier les informations</h3>
+          </div>
+          <div class="ef-grid">
+            <div class="ef-group ef-span2">
+              <label>Nom <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="editForm.nom" placeholder="Nom du client">
+            </div>
+            <div class="ef-group">
+              <label>Référence</label>
+              <input type="text" [(ngModel)]="editForm.reference" placeholder="CLT-001">
+            </div>
+            <div class="ef-group">
+              <label>ICE</label>
+              <input type="text" [(ngModel)]="editForm.ice" placeholder="000000000000000">
+            </div>
+            <div class="ef-group">
+              <label>Téléphone</label>
+              <input type="text" [(ngModel)]="editForm.telephone" placeholder="06 00 00 00 00">
+            </div>
+            <div class="ef-group">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="editForm.email" placeholder="client@email.com">
+            </div>
+            <div class="ef-group ef-span2">
+              <label>Adresse</label>
+              <input type="text" [(ngModel)]="editForm.adresse" placeholder="Adresse complète">
+            </div>
+            <div class="ef-group">
+              <label>Ville</label>
+              <input type="text" [(ngModel)]="editForm.ville" placeholder="Ville">
+            </div>
+            <div class="ef-group">
+              <label>Code Postal</label>
+              <input type="text" [(ngModel)]="editForm.codepostal" placeholder="00000">
+            </div>
+          </div>
+          <div class="ef-actions">
+            <button class="btn-ghost" (click)="cancelEdit()">Annuler</button>
+            <button class="btn-solid" (click)="saveClient()" [disabled]="saving">
+              {{ saving ? 'Enregistrement...' : '✅ Enregistrer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Files Tab -->
+      <div *ngIf="activeTab === 'files'">
+        <app-client-files-page [client]="client"></app-client-files-page>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loading" class="loading-view">
+  <div class="ld-spinner"></div>
+  <span>Chargement…</span>
+</div>

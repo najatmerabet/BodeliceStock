@@ -4,6 +4,7 @@ import { FactureService } from '../../services/facture.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { Client } from '../../models/clients.model';
 import { ClientFichiersService } from '../../services/client-file.service';
 import { ClientFile } from '../../models/client-file.model';
@@ -24,26 +25,19 @@ export class ClientsComponent implements OnInit {
   toast = '';
   toastType: 'ok' | 'err' = 'ok';
   showModal = false;
-  editMode = false;
+editMode = false;
   form: Client = { nom: '', ice: '', reference: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
   selectedClient: Client | null = null;
   deleteTarget: Client | null = null;
   deleting = false;
   sortColumn: 'nom' | 'ville' | null = null;
   sortDirection: 'asc' | 'desc' = 'asc';
-filterNom: string = '';
-filterVille: string = '';
-showFichiersModal = false;
-clientFichiers: ClientFile[] = [];
-fichiersClient: Client | null = null;
-loadingFichiers = false;
-uploadingFichier = false;
-deletingFichier = false;
-fichierDeleteTarget: ClientFile | null = null;
-showFichierEditModal = false;
-fichierEditForm: Partial<ClientFile> = {};
-fichierEditTarget: ClientFile | null = null;
-isDragging = false;
+  filterNom: string = '';
+  filterVille: string = '';
+  showDetailModal = false;
+  detailClient: Client | null = null;
+
+  isDragging = false;
 // ── Nouveaux fichiers en attente (avant création du client) ──
 pendingFiles: { file: File; nom: string; type: string; remarque: string }[] = [];
 uploadingPending = false;
@@ -115,7 +109,8 @@ pendingClientFiles: {
     private factureService: FactureService,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
-    private clientFichiersService: ClientFichiersService
+    private clientFichiersService: ClientFichiersService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -196,8 +191,29 @@ private showMessage(msg: string, type: 'success' | 'error'): void {
   openAdd(): void {
   this.editMode = false;
   this.form = { nom: '', ice: '', reference: '', adresse: '', telephone: '', email: '', ville: '', codepostal: '' };
-  this.pendingFiles = []; // ← reset des fichiers en attente
+  this.pendingFiles = [];
   this.showModal = true;
+}
+
+openDetail(client: Client): void {
+  this.router.navigate(['/clients', client.id]);
+}
+
+closeDetailModal(): void {
+  this.showDetailModal = false;
+  this.detailClient = null;
+}
+
+onClientUpdated(client: Client): void {
+  this.clientsService.updateClient(client.id!, client).subscribe({
+    next: (updated) => {
+      const index = this.clients.findIndex(c => c.id === updated.id);
+      if (index !== -1) this.clients[index] = updated;
+      this.detailClient = updated;
+      this.cdr.detectChanges();
+    },
+    error: (err) => console.error('Update error:', err)
+  });
 }
 
 saveClient(): void {
@@ -336,120 +352,24 @@ executeDelete(): void {
 
 readonly TYPES = ['CONTRAT', 'CIN', 'RC', 'AUTRE'];
 
-// Ouvrir le modal fichiers d'un client
-openFichiers(client: Client): void {
-  this.fichiersClient = client;
-  this.showFichiersModal = true;
-  this.loadFichiers();
-}
 
-closeFichiersModal(): void {
-  this.showFichiersModal = false;
-  this.clientFichiers = [];
-  this.fichiersClient = null;
-}
+  // Ouvrir le gestionnaire de fichiers moderne
+  openFichiers(client: Client): void {
+    this.router.navigate(['/clients', client.id], { queryParams: { tab: 'files' } });
+  }
 
-loadFichiers(): void {
-  if (!this.fichiersClient?.id) return;
-  this.loadingFichiers = true;
-  this.clientFichiersService.getFichiers(this.fichiersClient.id).subscribe({
-    next: (data) => { this.clientFichiers = data; this.loadingFichiers = false; this.cdr.detectChanges(); },
-    error: () => { this.loadingFichiers = false; }
-  });
-}
+  formatSize(bytes?: number): string {
+    if (!bytes) return '-';
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+  }
 
-onFileSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files?.length || !this.fichiersClient?.id) return;
-
-  const file = input.files[0];
-  const fd = new FormData();
-  fd.append('fichier', file);
-  fd.append('nom', file.name);
-  fd.append('type', 'AUTRE');
-
-  this.uploadingFichier = true;
-  this.clientFichiersService.uploadFichier(this.fichiersClient.id, fd).subscribe({
-    next: (f) => {
-      this.clientFichiers.unshift(f);
-      this.uploadingFichier = false;
-      this.showToast('Fichier ajouté', 'ok');
-      this.cdr.detectChanges();
-    },
-    error: () => {
-      this.uploadingFichier = false;
-      this.showToast('Erreur upload', 'err');
-    }
-  });
-  input.value = '';
-}
-
-openFichierEdit(f: ClientFile): void {
-  this.fichierEditTarget = f;
-  this.fichierEditForm = { nom: f.nom, type: f.type, remarque: f.remarque };
-  this.showFichierEditModal = true;
-}
-
-saveFichierEdit(): void {
-  if (!this.fichierEditTarget || !this.fichiersClient?.id) return;
-  this.clientFichiersService.updateFichier(
-    this.fichiersClient.id, this.fichierEditTarget.id!, this.fichierEditForm
-  ).subscribe({
-    next: (updated) => {
-      const i = this.clientFichiers.findIndex(f => f.id === updated.id);
-      if (i !== -1) this.clientFichiers[i] = updated;
-      this.showFichierEditModal = false;
-      this.showToast('Fichier modifié', 'ok');
-      this.cdr.detectChanges();
-    },
-    error: () => this.showToast('Erreur modification', 'err')
-  });
-}
-
-
-confirmDeleteFichier(f: ClientFile): void {
-  this.fichierDeleteTarget = f;
-}
-
-executeDeleteFichier(): void {
-  if (!this.fichierDeleteTarget || !this.fichiersClient?.id) return;
-  this.deletingFichier = true;
-  this.clientFichiersService.deleteFichier(this.fichiersClient.id, this.fichierDeleteTarget.id!).subscribe({
-    next: () => {
-      this.clientFichiers = this.clientFichiers.filter(f => f.id !== this.fichierDeleteTarget!.id);
-      this.fichierDeleteTarget = null;
-      this.deletingFichier = false;
-      this.showToast('Fichier supprimé', 'ok');
-      this.cdr.detectChanges();
-    },
-    error: () => { this.deletingFichier = false; this.showToast('Erreur suppression', 'err'); }
-  });
-}
-
-downloadFichier(f: ClientFile): void {
-  if (!this.fichiersClient?.id) return;
-  window.open(this.clientFichiersService.getDownloadUrl(this.fichiersClient.id, f.id!), '_blank');
-}
-
-getFileIcon(type: string): string {
-  const icons: Record<string, string> = {
-    CONTRAT: 'description', CIN: 'badge', RC: 'business', AUTRE: 'attach_file'
-  };
-  return icons[type] || 'attach_file';
-}
-
-formatSize(bytes?: number): string {
-  if (!bytes) return '-';
-  if (bytes < 1024) return bytes + ' o';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
-}
-
-cancelDelete(): void {
-  setTimeout(() => {
-    this.deleteTarget = null;
-  });
-}
+  cancelDelete(): void {
+    setTimeout(() => {
+      this.deleteTarget = null;
+    });
+  }
 deleteClient(client: Client): void {
   this.deleteTarget = client;
 }
@@ -576,7 +496,7 @@ async generateReleve(): Promise<void> {
       logoImg.src = 'assets/logo.png';
       await new Promise<void>((resolve) => { logoImg.onload = () => resolve(); setTimeout(resolve, 500); });
       if (logoImg.complete) doc.addImage(logoImg, 'PNG', LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
-    } catch {}
+    } catch (e) {}
 
     // ── INFOS ENTREPRISE ──
     doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NOIR);
