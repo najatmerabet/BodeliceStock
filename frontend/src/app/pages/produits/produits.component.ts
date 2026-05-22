@@ -56,6 +56,8 @@ export class ProduitsComponent implements OnInit {
   nomSuggestions: Produit[] = [];
   showSuggestions = false;
 
+  uniqueCategories: string[] = [];
+
   constructor(
     private produitService: ProduitService,
     private clientsService: ClientsService,
@@ -76,6 +78,7 @@ export class ProduitsComponent implements OnInit {
           quantite: Number(p.quantite),
           tva: Number(p.tva || 0),
         }));
+        this.uniqueCategories = Array.from(new Set(this.produits.map(p => p.categorie).filter(c => c && c.trim() !== ''))).sort() as string[];
         this.applyFilter();
         this.loading = false;
         this.cdr.detectChanges();
@@ -140,7 +143,7 @@ export class ProduitsComponent implements OnInit {
   // ── Add / Edit ──
   openAdd(): void {
     this.editMode = false;
-    this.form = { nom: '', unite: 'boule', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0, tva: 0 };
+    this.form = { nom: '', categorie: '', unite: 'boule', poidsUnitaire: 1, quantite: 0, prixUnitaire: 0, tva: 0 };
     this.prixClients = [];
     this.pendingPrixClients = [];
     this.newPrixClientId = 0;
@@ -361,6 +364,7 @@ export class ProduitsComponent implements OnInit {
 
   selectSuggestion(p: Produit): void {
     this.form.nom = p.nom;
+    this.form.categorie = p.categorie || '';
     this.form.unite = p.unite;
     this.form.poidsUnitaire = p.poidsUnitaire;
     this.form.prixUnitaire = p.prixUnitaire;

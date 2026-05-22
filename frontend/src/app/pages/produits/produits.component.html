@@ -141,6 +141,13 @@
             </div>
           </div>
         </div>
+        <div class="fld">
+          <label>Catégorie <span class="opt">(Sélectionner ou ajouter une nouvelle)</span></label>
+          <input type="text" [(ngModel)]="form.categorie" list="cat-list" placeholder="Catégorie du produit" autocomplete="off" />
+          <datalist id="cat-list">
+            <option *ngFor="let c of uniqueCategories" [value]="c"></option>
+          </datalist>
+        </div>
         <div class="fld-row">
           <div class="fld">
             <label>Type d'unité</label>

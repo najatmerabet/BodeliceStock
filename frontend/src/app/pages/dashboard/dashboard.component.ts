@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 
-import { DashboardService } from '../../services/dashbordservice';
+import { DashboardService } from '../../services/dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -130,12 +130,12 @@ export class DashboardComponent implements OnInit {
   }
 
   loadStats(): void {
-    this.dashboardService.getStats().subscribe({
-      next: (data) => {
+    this.dashboardService.getSummary().subscribe({
+      next: (data: any) => {
         this.updateStats(data);
         this.cdr.detectChanges();
       },
-      error: (err) => console.error(err),
+      error: (err: any) => console.error(err),
     });
   }
 
@@ -150,7 +150,8 @@ export class DashboardComponent implements OnInit {
       { icon: 'receipt_long',   label: 'Factures',         value: data.factures,                    color: '#C62828', bg: '#FFEBEE' },
       { icon: 'local_shipping', label: 'Livraisons',       value: data.livraisons,                  color: '#E65100', bg: '#FFF3E0' },
       { icon: 'payments',       label: 'Revenus mensuels', value: totalRevenus.toFixed(0) + ' DH',  color: '#6A1B9A', bg: '#F3E5F5' },
-      { icon: 'inventory',      label: 'Stock total',      value: data.poidsTotal + ' kg',          color: '#00695C', bg: '#E0F2F1' },
+      { icon: 'inventory',      label: 'Stock total',      value: data.totalNb + ' NB',             color: '#00695C', bg: '#E0F2F1' },
+      { icon: 'scale',          label: 'Poids total',      value: data.poidsTotal + ' kg',           color: '#37474F', bg: '#ECEFF1' },
     ];
 
     if (data.revenusParMois?.length) {

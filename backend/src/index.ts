@@ -16,6 +16,8 @@ import statisticsRouter from './routes/statistics';
 import prixClientRouter from './routes/prix-client';
 import clientsFilesRouter from './routes/clients-files';
 import clientsFoldersRouter from './routes/clients-folders';
+import stockUsineRouter from './routes/stock-usine';
+import productionRouter from './routes/production';
 dotenv.config();
 
 const app = express();
@@ -40,6 +42,8 @@ app.use('/api/logs', logs);
 app.use('/api/prix-client', prixClientRouter);
 app.use('/api/clients/fichiers', clientsFilesRouter);
 app.use('/api/clients/folders', clientsFoldersRouter);
+app.use('/api/stock-usine', stockUsineRouter);
+app.use('/api/production', productionRouter);
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: '🏭 ProdMeat Stock API is running' });

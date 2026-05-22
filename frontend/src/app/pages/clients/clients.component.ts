@@ -6,8 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { Client } from '../../models/clients.model';
-import { ClientFichiersService } from '../../services/client-file.service';
-import { ClientFile } from '../../models/client-file.model';
+import { ClientFilesService } from '../../services/client-files.service';
+import { ClientFileItem } from '../../models/client-file.model';
 import { HttpClientModule } from '@angular/common/http';
 @Component({
   selector: 'app-clients',
@@ -109,7 +109,7 @@ pendingClientFiles: {
     private factureService: FactureService,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
-    private clientFichiersService: ClientFichiersService,
+    private clientFilesService: ClientFilesService,
     private router: Router
   ) {}
 
@@ -268,8 +268,8 @@ this.clientsService.addClient(payload).subscribe({
 
       console.log('Upload fichier pour client ID:', client.id, pf.file.name);
 
-      return this.clientFichiersService
-        .uploadFichier(client.id!, fd)
+      return this.clientFilesService
+        .uploadFile(client.id!, fd)
         .toPromise();
     });
 

@@ -86,12 +86,12 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 // POST /api/produits
 router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
+    const { nom, categorie, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
     if (!nom || prixUnitaire === undefined) { res.status(400).json({ error: 'nom et prixUnitaire sont obligatoires' }); return; }
     const ref = reference || await generateReference();
     const produit = await prisma.produit.create({
       data: {
-        reference: ref, nom,
+        reference: ref, nom, categorie,
         unite: unite || 'kg',
         poidsUnitaire: poidsUnitaire || 1,
         quantite: quantite || 0,
@@ -116,7 +116,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id));
-    const { nom, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
+    const { nom, categorie, prixUnitaire, unite, poidsUnitaire, quantite, reference, tva } = req.body;
 
     // Récupérer l'ancien produit pour comparer la quantité
     const ancien = await prisma.produit.findUnique({ where: { id } });
@@ -124,6 +124,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
 
     const data: any = {};
     if (nom !== undefined) data.nom = nom;
+    if (categorie !== undefined) data.categorie = categorie;
     if (prixUnitaire !== undefined) data.prixUnitaire = prixUnitaire;
     if (unite !== undefined) data.unite = unite;
     if (poidsUnitaire !== undefined) data.poidsUnitaire = poidsUnitaire;

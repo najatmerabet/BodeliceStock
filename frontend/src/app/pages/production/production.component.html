@@ -1,0 +1,128 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-group">
+      <h1 class="page-title">Production</h1>
+      <p class="page-subtitle">Suivi journalier des entrées en stock par produit</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="exportPdf()">
+        <span class="material-symbols-rounded">picture_as_pdf</span> PDF
+      </button>
+      <button class="btn btn-outline" (click)="exportExcel()">
+        <span class="material-symbols-rounded">table_view</span> Excel
+      </button>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <span class="material-symbols-rounded">add</span> Ajouter
+      </button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="toolbar">
+      <div class="filters">
+        <div class="filter-group">
+          <label class="filter-label">Du</label>
+          <input type="date" class="filter-input" [(ngModel)]="dateDebut" (change)="applyFilter()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Au</label>
+          <input type="date" class="filter-input" [(ngModel)]="dateFin" (change)="applyFilter()">
+        </div>
+        <button class="btn btn-ghost" (click)="clearFilter()" *ngIf="dateDebut || dateFin" title="Effacer">
+          <span class="material-symbols-rounded">filter_alt_off</span>
+        </button>
+      </div>
+      <button class="btn btn-ghost" (click)="loadData()" title="Rafraîchir">
+        <span class="material-symbols-rounded">refresh</span>
+      </button>
+    </div>
+
+    <div class="tbl-wrap" *ngIf="!loading">
+      <table class="prod-table">
+        <thead>
+          <!-- Ligne 1 : catégories -->
+          <tr class="header-cat">
+            <th class="col-date" rowspan="2">Date</th>
+            <th *ngFor="let cat of categories"
+                [attr.colspan]="cat.colSpan"
+                class="cat-name">
+              {{ cat.nom }}
+            </th>
+          </tr>
+          <!-- Ligne 2 : produits (nom + poids) -->
+          <tr class="header-prod">
+            <th *ngFor="let p of produits" class="prod-th">
+              <div class="prod-th-inner">
+                <span class="prod-nom">{{ p.nom }} <span class="prod-poids">({{ p.poidsUnitaire }} KG)</span></span>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let date of dates; let i = index" class="date-row">
+            <td class="cell-date">
+              {{ date | date:'dd/MM/yy' }}
+            </td>
+            <td *ngFor="let p of produits"
+                class="cell-val"
+                (click)="openAddModal(p, date)"
+                [title]="'Cliquer pour ajouter — ' + p.nom">
+              <ng-container *ngIf="getQuantite(date, p.id); else emptyCell">
+                <span class="val-filled">{{ getQuantite(date, p.id) }} KG</span>
+              </ng-container>
+              <ng-template #emptyCell>
+                <span class="val-empty"></span>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="dates.length === 0" class="empty">
+        <span class="material-symbols-rounded">calendar_month</span>
+        <p>Aucune entrée de production pour cette période.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loader"></div>
+  </div>
+
+  <!-- ── Modal ─────────────────────────────────────── -->
+  <div *ngIf="showAddModal" class="overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="m-head">
+        <h3>Nouvelle entrée</h3>
+        <button class="m-close" (click)="closeModal()">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="m-body">
+        <div class="fld">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="addForm.date" />
+        </div>
+        <div class="fld">
+          <label>Produit</label>
+          <select [(ngModel)]="addForm.produitId">
+            <option [value]="0" disabled>Sélectionner un produit...</option>
+            <optgroup *ngFor="let cat of categories" [label]="cat.nom">
+              <option *ngFor="let p of cat.produits" [value]="p.id">{{ p.nom }} ({{ p.poidsUnitaire }} KG)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Quantité (nombre d'unités)</label>
+          <input type="number" [(ngModel)]="addForm.quantite" min="1" placeholder="Ex : 5" />
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="btn btn-outline" (click)="closeModal()">Annuler</button>
+        <button class="btn btn-primary" (click)="saveEntree()"
+                [disabled]="saving || !addForm.produitId || addForm.quantite <= 0">
+          <span class="material-symbols-rounded">save</span>
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

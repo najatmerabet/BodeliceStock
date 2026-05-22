@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
 import multer from 'multer';
+import { authMiddleware } from './auth.middleware';
 
 const router = Router();
 
-
+router.use(authMiddleware);
 
 router.get('/stats', async (req, res) => {
 

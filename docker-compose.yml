@@ -10,6 +10,8 @@ services:
     depends_on:
       - db
     restart: always
+    volumes:
+      - uploads_data:/app/uploads
 
   frontend:
     build: ./frontend
@@ -31,3 +33,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

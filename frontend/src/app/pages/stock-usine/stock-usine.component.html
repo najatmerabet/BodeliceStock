@@ -1,0 +1,119 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-group">
+      <h1 class="page-title">Stock Usine</h1>
+      <p class="page-subtitle">Récapitulatif des entrées et sorties par produit</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="exportPdf()">
+        <span class="material-symbols-rounded">picture_as_pdf</span> PDF
+      </button>
+      <button class="btn btn-outline" (click)="exportExcel()">
+        <span class="material-symbols-rounded">table_view</span> Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row" *ngIf="!loading && data.length > 0">
+    <div class="stat-card">
+      <div class="stat-icon entree-icon">
+        <span class="material-symbols-rounded">login</span>
+      </div>
+      <div class="stat-info">
+        <span class="stat-val text-entree">{{ totalEntrees | number:'1.0-0' }}</span>
+        <span class="stat-lbl">Total Entrées (NB)</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon sortie-icon">
+        <span class="material-symbols-rounded">logout</span>
+      </div>
+      <div class="stat-info">
+        <span class="stat-val text-sortie">{{ totalSorties | number:'1.0-0' }}</span>
+        <span class="stat-lbl">Total Sorties (NB)</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon final-icon" [ngClass]="stockTotal < 0 ? 'negative-icon' : ''">
+        <span class="material-symbols-rounded">inventory_2</span>
+      </div>
+      <div class="stat-info">
+        <span class="stat-val" [ngClass]="stockTotal < 0 ? 'text-sortie' : 'text-final'">{{ stockTotal | number:'1.0-0' }}</span>
+        <span class="stat-lbl">Stock Final (NB)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="toolbar">
+      <div class="filters">
+        <div class="filter-group">
+          <label class="filter-label">Du</label>
+          <input type="date" class="filter-input" [(ngModel)]="dateDebut" (change)="applyFilter()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Au</label>
+          <input type="date" class="filter-input" [(ngModel)]="dateFin" (change)="applyFilter()">
+        </div>
+        <button class="btn btn-ghost" (click)="clearFilter()" *ngIf="dateDebut || dateFin" title="Effacer les filtres">
+          <span class="material-symbols-rounded">filter_alt_off</span>
+        </button>
+      </div>
+      <button class="btn btn-ghost" (click)="loadData()" title="Rafraîchir">
+        <span class="material-symbols-rounded">refresh</span>
+      </button>
+    </div>
+
+    <div class="tbl-wrap" *ngIf="!loading">
+      <table>
+        <thead>
+          <tr>
+            <th>Désignation produit</th>
+            <th class="c">Poids (KG/Unité)</th>
+            <th class="c">Entrées (NB)</th>
+            <th class="c">Sorties (NB)</th>
+            <th class="c">Stock final (NB)</th>
+          </tr>
+        </thead>
+        <ng-container *ngFor="let group of groupedData">
+          <tbody>
+            <tr class="cat-row">
+              <td colspan="5">
+                <div class="cat-row-inner">
+                  <span class="cat-bar"></span>
+                  <span class="cat-name">{{ group.categorie }}</span>
+                  <span class="cat-count">{{ group.items.length }} {{ group.items.length > 1 ? 'produits' : 'produit' }}</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngFor="let item of group.items" class="prod-row">
+              <td>
+                <span class="prod-name">{{ item.nom }}</span>
+              </td>
+              <td class="c">
+                <span class="weight-tag">{{ item.poidsUnitaire }} KG / {{ item.unite | uppercase }}</span>
+              </td>
+              <td class="c">
+                <span class="val-entree">{{ item.entrees | number:'1.0-0' }}</span>
+              </td>
+              <td class="c">
+                <span class="val-sortie" *ngIf="item.sorties > 0">{{ item.sorties | number:'1.0-0' }}</span>
+                <span class="val-muted" *ngIf="!item.sorties || item.sorties === 0">—</span>
+              </td>
+              <td class="c">
+                <span class="val-final">{{ item.stockFinal | number:'1.0-0' }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </ng-container>
+      </table>
+
+      <div *ngIf="groupedData.length === 0" class="empty">
+        <span class="material-symbols-rounded">inventory_2</span>
+        <p>Aucune donnée trouvée pour cette période.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loader"></div>
+  </div>
+</div>

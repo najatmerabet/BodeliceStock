@@ -28,6 +28,7 @@ export interface DashboardSummary {
   factures: number;
   stockFaible: number;
   valeurStock: number;
+  totalNb: number;
   poidsTotal: number;
   proformas: number;
   avoirs: number;

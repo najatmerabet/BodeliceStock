@@ -27,6 +27,11 @@ router.get('/summary', authMiddleware, async (_req: Request, res: Response, next
     date: true
   }
 });
+    // Nombre total d'unités (NB)
+    const totalNb = produits.reduce((acc, p) => {
+      return acc + Number(p.quantite);
+    }, 0);
+
     // Poids total en kg
     const poidsTotal = produits.reduce((acc, p) => {
       return acc + (Number(p.quantite) * Number(p.poidsUnitaire));
@@ -101,6 +106,7 @@ const livraisonsParStatut = await prisma.facture.groupBy({
       avoirs: avoirCount,
       stockFaible,
       valeurStock: Math.round(valeurStock * 100) / 100,
+      totalNb: Math.round(totalNb * 100) / 100,
       poidsTotal: Math.round(poidsTotal * 100) / 100,
       topProduits,
       alertes,

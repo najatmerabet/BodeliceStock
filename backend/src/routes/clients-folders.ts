@@ -2,9 +2,12 @@ import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { authMiddleware } from './auth.middleware';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+router.use(authMiddleware);
 
 router.get('/:clientId/folders', async (req: Request, res: Response) => {
   try {

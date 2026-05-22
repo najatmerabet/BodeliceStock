@@ -31,10 +31,6 @@ export class AuthService {
      localStorage.removeItem('user');
   }
 
-  setToken(token: string) {
-    localStorage.setItem('token', token);
-  }
-
  getToken() {
   return localStorage.getItem('accessToken');
 }

@@ -1,0 +1,132 @@
+/* ── Page Header ── */
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+.header-actions { display: flex; gap: 10px; }
+
+/* ── Table Card ── */
+.table-card { background: #fff; border-radius: 14px; border: 1px solid #E2E8F0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); overflow: hidden; position: relative; }
+
+/* ── Toolbar ── */
+.toolbar {
+  padding: 14px 20px; border-bottom: 1px solid #F1F5F9;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+}
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 0.72rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-input {
+  padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
+  font-family: inherit; font-size: 0.82rem; color: #475569; background: #fff; outline: none;
+  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,58,95,0.06); }
+}
+.btn-ghost {
+  width: 38px; height: 38px; border: 1px solid #E2E8F0; border-radius: 10px; background: #fff;
+  color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  .material-symbols-rounded { font-size: 20px; }
+  &:hover { background: #F8FAFC; color: var(--primary); border-color: var(--primary-100); }
+}
+
+/* ── Matrix Table ── */
+.tbl-wrap { overflow-x: auto; }
+.prod-table {
+  width: 100%; border-collapse: collapse; min-width: 900px;
+  th, td {
+    border-right: 1px solid #E2E8F0;
+    border-bottom: 1px solid #F1F5F9;
+    &:last-child { border-right: none; }
+  }
+
+  /* Ligne Catégories */
+  .header-cat {
+    background: #F8FAFC;
+    th {
+      padding: 10px; font-size: 0.68rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.8px; color: var(--primary);
+      text-align: center; border-bottom: 2px solid #E2E8F0;
+      &.col-date { text-align: left; padding-left: 20px; color: #475569; min-width: 110px; font-size: 0.75rem; }
+    }
+  }
+
+  /* Ligne Produits */
+  .header-prod {
+    background: #fff;
+    .prod-th {
+      padding: 0; text-align: center; vertical-align: top;
+      border-bottom: 2px solid #E2E8F0; min-width: 90px;
+    }
+    .prod-th-inner {
+      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 4px; padding: 10px 8px;
+    }
+    .prod-nom {
+      font-size: 0.72rem; font-weight: 600; color: #475569; line-height: 1.3;
+      white-space: normal;
+    }
+    .prod-poids {
+      font-size: 0.65rem; font-weight: 800; color: var(--primary);
+      background: #EEF2FF; padding: 2px 6px; border-radius: 4px;
+      margin-top: 0; white-space: nowrap;
+    }
+  }
+
+  /* Lignes de données */
+  .date-row {
+    transition: background 0.1s; background: #fff;
+    &:nth-child(even) { background: #F8FAFC; }
+    &:hover { background: #EFF3F8 !important; }
+  }
+
+  .cell-date {
+    padding: 11px 20px; font-size: 0.82rem; font-weight: 700;
+    color: #0F172A; white-space: nowrap; text-align: left;
+    border-right: 2px solid #E2E8F0 !important;
+  }
+
+  .cell-val {
+    padding: 6px 8px; text-align: center; cursor: pointer;
+    vertical-align: middle; position: relative;
+    &:hover { background: #EBF1F9; }
+    
+    .val-filled {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; font-size: 0.88rem; font-weight: 700; color: #15803D;
+      background: #F0FDF4; border-radius: 6px; padding: 4px 0; min-height: 28px;
+    }
+    .val-empty {
+      display: block; width: 100%; height: 28px; position: relative;
+    }
+    &:hover .val-empty::after {
+      content: '+'; position: absolute; inset: 0; display: flex;
+      align-items: center; justify-content: center; font-size: 16px;
+      font-weight: 700; color: #94A3B8;
+    }
+  }
+}
+
+/* ── Empty & Loader ── */
+.empty {
+  padding: 56px 20px; text-align: center; color: #94A3B8;
+  .material-symbols-rounded { font-size: 44px; margin-bottom: 8px; opacity: 0.25; display: block; }
+  p { font-size: 0.88rem; }
+}
+.loader { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--primary), transparent); animation: slide 1.2s ease infinite; }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* ── Modal ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.15s;
+}
+.modal { background: #fff; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.12); width: 90%; max-width: 420px; animation: pop 0.2s ease; }
+.m-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 0; h3 { font-size: 1.05rem; font-weight: 800; color: #0F172A; } }
+.m-close { width: 32px; height: 32px; border: none; background: #F1F5F9; border-radius: 8px; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; &:hover { background: #E2E8F0; } }
+.m-body { padding: 18px 24px; }
+.fld { margin-bottom: 14px; }
+.fld label { display: block; font-size: 0.72rem; font-weight: 700; color: #64748B; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+.fld input, .fld select {
+  width: 100%; padding: 9px 13px; border: 1px solid #E2E8F0; border-radius: 9px;
+  font-family: inherit; font-size: 0.88rem; color: #0F172A; background: #FAFBFC; outline: none; transition: all 0.15s;
+  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,58,95,0.06); background: #fff; }
+}
+.m-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 0 24px 20px; margin-top: 6px; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
