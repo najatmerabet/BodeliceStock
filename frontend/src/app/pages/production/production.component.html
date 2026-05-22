@@ -57,7 +57,7 @@
           <tr class="header-prod">
             <th *ngFor="let p of produits" class="prod-th">
               <div class="prod-th-inner">
-                <span class="prod-nom">{{ p.nom }} <span class="prod-poids">({{ p.poidsUnitaire }} KG)</span></span>
+                <span class="prod-nom">{{ p.nom }} <span class="prod-poids">({{ p.poidsUnitaire }} KG / {{ p.unite }})</span></span>
               </div>
             </th>
           </tr>
@@ -72,7 +72,7 @@
                 (click)="openAddModal(p, date)"
                 [title]="'Cliquer pour ajouter — ' + p.nom">
               <ng-container *ngIf="getQuantite(date, p.id); else emptyCell">
-                <span class="val-filled">{{ getQuantite(date, p.id) }} KG</span>
+                <span class="val-filled">{{ getQuantite(date, p.id) }} {{ p.unite }}</span>
               </ng-container>
               <ng-template #emptyCell>
                 <span class="val-empty"></span>
@@ -115,7 +115,7 @@
           </select>
         </div>
         <div class="fld">
-          <label>Quantité (nombre d'unités)</label>
+          <label>Nombre d'unités ({{ addForm.produitId ? getUnite(addForm.produitId) : '' }})</label>
           <input type="number" [(ngModel)]="addForm.quantite" min="1" placeholder="Ex : 5" />
         </div>
       </div>

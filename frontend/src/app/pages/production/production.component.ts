@@ -96,6 +96,11 @@ export class ProductionComponent implements OnInit {
     });
   }
 
+  getUnite(produitId: number): string {
+    const p = this.produits.find(p => p.id === produitId);
+    return p ? p.unite : '';
+  }
+
   applySearch(): void {
     const q = this.searchQuery.toLowerCase().trim();
     const filteredProduits = q ? this.produits.filter(p => p.nom.toLowerCase().includes(q)) : this.produits;
@@ -166,7 +171,7 @@ export class ProductionComponent implements OnInit {
     // Ligne 2 : Produits (Nom + Poids)
     const row2: any[] = [''];
     this.produits.forEach(p => {
-      row2.push(`${p.nom} (${p.poidsUnitaire} KG)`);
+      row2.push(`${p.nom} (${p.poidsUnitaire} KG / ${p.unite})`);
     });
     aoa.push(row2);
 
@@ -175,7 +180,7 @@ export class ProductionComponent implements OnInit {
       const row: any[] = [d];
       this.produits.forEach(p => {
         const qte = this.getQuantite(d, p.id);
-        row.push(qte ? `${qte} KG` : '');
+        row.push(qte ? `${qte} ${p.unite}` : '');
       });
       aoa.push(row);
     });
@@ -216,7 +221,7 @@ export class ProductionComponent implements OnInit {
     this.categories.forEach(c => {
       head1.push({ content: c.nom.toUpperCase(), colSpan: c.colSpan, styles: { valign: 'middle', halign: 'center' } });
       c.produits.forEach(p => {
-        head2.push(`${p.poidsUnitaire} KG`);
+        head2.push(`${p.poidsUnitaire} KG / ${p.unite}`);
       });
     });
 
