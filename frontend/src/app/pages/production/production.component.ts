@@ -23,6 +23,7 @@ export class ProductionComponent implements OnInit {
   loading = false;
   dateDebut = '';
   dateFin = '';
+  searchQuery = '';
 
   // Modal d'ajout rapide
   showAddModal = false;
@@ -58,6 +59,22 @@ export class ProductionComponent implements OnInit {
     });
   }
 
+  rebuildCategories(produits: any[]): void {
+    const catsMap = new Map<string, any[]>();
+    produits.forEach(p => {
+      const cat = p.categorie || 'SANS CATÉGORIE';
+      if (!catsMap.has(cat)) catsMap.set(cat, []);
+      catsMap.get(cat)!.push(p);
+    });
+    this.categories = Array.from(catsMap.keys()).map(k => ({
+      nom: k,
+      produits: catsMap.get(k)!,
+      colSpan: catsMap.get(k)!.length
+    }));
+    this.produits = [];
+    this.categories.forEach(cat => this.produits.push(...cat.produits));
+  }
+
   groupProduits(): void {
     const catsMap = new Map<string, any[]>();
     this.produits.forEach(p => {
@@ -77,6 +94,13 @@ export class ProductionComponent implements OnInit {
     this.categories.forEach(cat => {
       this.produits.push(...cat.produits);
     });
+  }
+
+  applySearch(): void {
+    const q = this.searchQuery.toLowerCase().trim();
+    const filteredProduits = q ? this.produits.filter(p => p.nom.toLowerCase().includes(q)) : this.produits;
+    this.rebuildCategories(filteredProduits);
+    this.cdr.detectChanges();
   }
 
   applyFilter(): void {

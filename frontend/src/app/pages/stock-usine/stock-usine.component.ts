@@ -20,10 +20,13 @@ export class StockUsineComponent implements OnInit {
   
   dateDebut = '';
   dateFin = '';
+  searchQuery = '';
 
   totalEntrees = 0;
   totalSorties = 0;
   stockTotal = 0;
+
+  filteredData: any[] = [];
 
   constructor(private stockService: StockService, private cdr: ChangeDetectorRef) {}
 
@@ -36,10 +39,7 @@ export class StockUsineComponent implements OnInit {
     this.stockService.getStockUsine(this.dateDebut, this.dateFin).subscribe({
       next: (res) => {
         this.data = res;
-        this.groupData();
-        this.totalEntrees = this.data.reduce((acc, curr) => acc + Number(curr.entrees || 0), 0);
-        this.totalSorties = this.data.reduce((acc, curr) => acc + Number(curr.sorties || 0), 0);
-        this.stockTotal = this.data.reduce((acc, curr) => acc + Number(curr.stockFinal || 0), 0);
+        this.applySearch();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -51,10 +51,19 @@ export class StockUsineComponent implements OnInit {
     });
   }
 
+  applySearch(): void {
+    const q = this.searchQuery.toLowerCase().trim();
+    this.filteredData = q ? this.data.filter(item => item.nom.toLowerCase().includes(q)) : this.data;
+    this.groupData();
+    this.totalEntrees = this.filteredData.reduce((acc, curr) => acc + Number(curr.entrees || 0), 0);
+    this.totalSorties = this.filteredData.reduce((acc, curr) => acc + Number(curr.sorties || 0), 0);
+    this.stockTotal = this.filteredData.reduce((acc, curr) => acc + Number(curr.stockFinal || 0), 0);
+  }
+
   groupData(): void {
     const groups = new Map<string, any[]>();
     
-    this.data.forEach(item => {
+    this.filteredData.forEach(item => {
       const cat = item.categorie || 'AUTRES';
       if (!groups.has(cat)) {
         groups.set(cat, []);

@@ -20,6 +20,10 @@
   <div class="table-card">
     <div class="toolbar">
       <div class="filters">
+        <div class="filter-group search-group">
+          <span class="material-symbols-rounded search-icon">search</span>
+          <input type="text" class="filter-input search-input" [(ngModel)]="searchQuery" (input)="applySearch()" placeholder="Rechercher un produit..." />
+        </div>
         <div class="filter-group">
           <label class="filter-label">Du</label>
           <input type="date" class="filter-input" [(ngModel)]="dateDebut" (change)="applyFilter()">

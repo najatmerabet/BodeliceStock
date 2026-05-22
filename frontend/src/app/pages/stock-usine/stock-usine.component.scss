@@ -33,6 +33,9 @@
   .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 }
 .filter-group { display: flex; align-items: center; gap: 6px; }
+.search-group { position: relative; }
+.search-icon { position: absolute; left: 10px; font-size: 18px; color: #94A3B8; pointer-events: none; }
+.search-input { padding-left: 34px !important; min-width: 220px; }
 .filter-label { font-size: 0.72rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
 .filter-input {
   padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 8px;
