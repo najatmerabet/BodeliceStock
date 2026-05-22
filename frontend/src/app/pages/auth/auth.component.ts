@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -18,7 +18,7 @@ export class Auth {
   error = '';
   loading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   login(): void {
     this.loading = true;
@@ -31,6 +31,7 @@ export class Auth {
       error: (err) => {
         this.loading = false;
         this.error = 'Email ou mot de passe incorrect';
+        this.cdr.detectChanges();
       }
     });
   }

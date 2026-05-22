@@ -76,27 +76,35 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 // PUT /api/clients/:id — Modifier un client
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log("🔵 ROUTE PUT CLIENTS ATTEINTE");
+    console.log("🟢 PUT client route hit", req.params.id, req.body);
     const { reference, nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
+    const clientId = parseInt(String(req.params.id));
+    console.log("🟢 Parsing client ID:", clientId);
+    
     const client = await prisma.client.update({
-      where: { id: parseInt(String(req.params.id)) },
+      where: { id: clientId },
       data: { reference: reference || null, nom, ice, telephone, adresse, email, ville, codepostal },
     });
-    await createLog({
-      action: 'UPDATE',
-      entity: 'Client',
-      entityId: client.id,
-      description: `Client mis à jour: ${client.nom}`,
-      userId: (req as any).user?.userId,
-    });
+    console.log("🟢 Client updated:", client.id);
+    
+    if ((req as any).user?.userId) {
+      await createLog({
+        action: 'UPDATE',
+        entity: 'Client',
+        entityId: client.id,
+        description: `Client mis à jour: ${client.nom}`,
+        userId: (req as any).user.userId,
+      }).catch(e => console.error('Log error:', e));
+    }
+    
     res.json(client);
   } catch (error: any) {
+    console.error('🔴 PUT client error:', error);
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'Client non trouvé' });
       return;
     }
-    console.error('PUT client error:', error);
-    res.status(400).json({ error: 'Erreur lors de la mise à jour du client', details: error.message });
+    res.status(500).json({ error: 'Erreur: ' + error.message });
   }
 });
 

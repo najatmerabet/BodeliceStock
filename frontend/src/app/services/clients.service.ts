@@ -7,18 +7,19 @@ import { Client } from '../models/clients.model';
   providedIn: 'root',
 })
 export class ClientsService {
-
   private apiurl = '/api/clients';
 
   constructor(private http: HttpClient) {}
 
   getClients(): Observable<Client[]> {
-   
     return this.http.get<Client[]>(this.apiurl);
-    
   }
+  
+  getClient(id: number): Observable<Client> {
+    return this.http.get<Client>(`${this.apiurl}/${id}`);
+  }
+
   addClient(client: Client): Observable<Client> {
-    console.log('+++++++++++++++++++++>Client ajouté :', client);
     return this.http.post<Client>(this.apiurl, client);
   }
   
@@ -29,5 +30,4 @@ export class ClientsService {
 deleteClient(ClientId: number): Observable<any> {
     return this.http.delete(`${this.apiurl}/${ClientId}`);
 }
-
 }

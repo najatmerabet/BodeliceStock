@@ -1,14 +1,11 @@
-// client-file.model.ts
-export interface ClientFile {
+export interface ClientFolder {
   id?: number;
   clientId: number;
+  parentId?: number | null;
   nom: string;
-  nomFichier: string;
-  chemin: string;
-  type: string;
-  taille?: number;
-  remarque?: string;
+  couleur: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ClientFileItem {
@@ -21,16 +18,6 @@ export interface ClientFileItem {
   chemin: string;
   type: string;
   taille?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ClientFolder {
-  id?: number;
-  clientId: number;
-  parentId?: number | null;
-  nom: string;
-  couleur: string;
   createdAt?: string;
   updatedAt?: string;
 }

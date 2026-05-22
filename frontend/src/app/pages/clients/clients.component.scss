@@ -80,6 +80,7 @@
 .modal-sm { max-width: 380px; }
 .modal-lg { max-width: 750px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #F1F5F9; flex-shrink: 0;
+  .modal-releve { max-width: 500px; }
   h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0F172A; }
 }
 .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #F1F5F9; cursor: pointer; display: flex; align-items: center; justify-content: center; .material-symbols-rounded { font-size: 18px; color: #64748B; } &:hover { background: #E2E8F0; } }
