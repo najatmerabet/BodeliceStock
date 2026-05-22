@@ -271,7 +271,7 @@
       </div>
 
       <!-- Drop zone -->
-      <label class="drop-zone"
+      <!-- <label class="drop-zone"
         [class.drag-over]="isDragging"
         (dragover)="$event.preventDefault(); isDragging = true"
         (dragleave)="isDragging = false"
@@ -282,10 +282,10 @@
           <span class="dz-link">Choisir des fichiers</span> ou glisser-déposer
         </p>
         <p class="dz-hint">PDF, JPG, PNG, DOCX…</p>
-      </label>
+      </label> -->
 
       <!-- Liste fichiers -->
-      <div *ngIf="pendingClientFiles.length > 0" class="files-list">
+      <!-- <div *ngIf="pendingClientFiles.length > 0" class="files-list">
         <div *ngFor="let pf of pendingClientFiles; let i = index" class="file-row">
 
           <div class="file-icon-wrap">
@@ -306,7 +306,7 @@
           </button>
 
         </div>
-      </div>
+      </div> -->
 
     </div><!-- fin modal-body -->
 
