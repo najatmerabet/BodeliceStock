@@ -74,7 +74,8 @@ pendingClientFiles: {
     return arr;
   }
 
-  
+
+  // Autocomplete Villf00159be8769d5688090d2c808e
   readonly VILLES_MAROC = [
     'Tanger','Tétouan','Al Hoceima','Larache','Asilah','Chefchaouen','Fnideq','Martil',
     'Casablanca','Mohammadia','El Jadida','Settat','Berrechid','Benslimane',
@@ -104,6 +105,9 @@ pendingClientFiles: {
     this.cdr.markForCheck();
   }
 
+
+
+
   constructor(
     private clientsService: ClientsService,
     private factureService: FactureService,
@@ -112,6 +116,7 @@ pendingClientFiles: {
     private clientFilesService: ClientFilesService,
     private router: Router
   ) {}
+
 
   ngOnInit(): void {
     this.loadClients();
@@ -302,12 +307,12 @@ this.clientsService.addClient(payload).subscribe({
       this.showModal = true;
   }
 
-onDrop(event: DragEvent): void {
-  event.preventDefault();
-  this.isDragging = false;
-  const files = Array.from(event.dataTransfer?.files || []);
-  files.forEach(file => this.pendingClientFiles.push({ file, type: 'AUTRE', remarque: '' }));
-}
+// onDrop(event: DragEvent): void {
+//   event.preventDefault();
+//   this.isDragging = false;
+//   const files = Array.from(event.dataTransfer?.files || []);
+//   files.forEach(file => this.pendingClientFiles.push({ file, type: 'AUTRE', remarque: '' }));
+// }
 // Ajouter un fichier à la liste en attente (pas d'upload encore)
 onPendingFileSelected(event: Event): void {
   const input = event.target as HTMLInputElement;
@@ -408,20 +413,20 @@ sortBy(column: 'nom' | 'ville'): void {
   }
   this.applyFilter();
 }
-onClientFilesSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files?.length) return;
+// onClientFilesSelected(event: Event): void {
+//   const input = event.target as HTMLInputElement;
+//   if (!input.files?.length) return;
 
-  Array.from(input.files).forEach(file => {
-    this.pendingClientFiles.push({
-      file,
-      type: 'AUTRE',
-      remarque: ''
-    });
-  });
+//   Array.from(input.files).forEach(file => {
+//     this.pendingClientFiles.push({
+//       file,
+//       type: 'AUTRE',
+//       remarque: ''
+//     });
+//   });
 
-  input.value = '';
-}
+//   input.value = '';
+// }
 removeClientFile(index: number): void {
   this.pendingClientFiles.splice(index, 1);
 }
