@@ -29,6 +29,7 @@ CREATE TABLE "stock_mouvements" (
 -- CreateTable
 CREATE TABLE "clients" (
     "id" SERIAL NOT NULL,
+    "reference" TEXT,
     "nom" TEXT NOT NULL,
     "ice" TEXT,
     "telephone" TEXT,
@@ -117,6 +118,8 @@ CREATE TABLE "factures" (
     "paye" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "reste" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "statut" TEXT NOT NULL DEFAULT 'impayée',
+    "type" TEXT NOT NULL DEFAULT 'NORMALE',
+    "reference_externe" TEXT,
 
     CONSTRAINT "factures_pkey" PRIMARY KEY ("id")
 );
@@ -182,11 +185,51 @@ CREATE TABLE "paiements" (
     CONSTRAINT "paiements_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "produits_nom_key" ON "produits"("nom");
+-- CreateTable
+CREATE TABLE "prix_client" (
+    "id" SERIAL NOT NULL,
+    "client_id" INTEGER NOT NULL,
+    "produit_id" INTEGER NOT NULL,
+    "prix" DECIMAL(10,2) NOT NULL,
+
+    CONSTRAINT "prix_client_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "client_folders" (
+    "id" SERIAL NOT NULL,
+    "client_id" INTEGER NOT NULL,
+    "parent_id" INTEGER,
+    "nom" TEXT NOT NULL,
+    "couleur" TEXT NOT NULL DEFAULT '#6B7280',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "client_folders_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "client_files" (
+    "id" SERIAL NOT NULL,
+    "client_id" INTEGER NOT NULL,
+    "folder_id" INTEGER,
+    "nom" TEXT NOT NULL,
+    "nomFichier" TEXT NOT NULL,
+    "remarque" TEXT,
+    "chemin" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "taille" INTEGER DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "client_files_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "produits_reference_key" ON "produits"("reference");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "clients_reference_key" ON "clients"("reference");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bons_livraison_numero_key" ON "bons_livraison"("numero");
@@ -205,6 +248,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "factures_avoir_numero_key" ON "factures_avoir"("numero");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "prix_client_client_id_produit_id_key" ON "prix_client"("client_id", "produit_id");
 
 -- AddForeignKey
 ALTER TABLE "stock_mouvements" ADD CONSTRAINT "stock_mouvements_produit_id_fkey" FOREIGN KEY ("produit_id") REFERENCES "produits"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -253,3 +299,21 @@ ALTER TABLE "lignes_avoir" ADD CONSTRAINT "lignes_avoir_produit_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "paiements" ADD CONSTRAINT "paiements_facture_id_fkey" FOREIGN KEY ("facture_id") REFERENCES "factures"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prix_client" ADD CONSTRAINT "prix_client_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prix_client" ADD CONSTRAINT "prix_client_produit_id_fkey" FOREIGN KEY ("produit_id") REFERENCES "produits"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "client_folders" ADD CONSTRAINT "client_folders_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "client_folders" ADD CONSTRAINT "client_folders_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "client_folders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "client_files" ADD CONSTRAINT "client_files_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "client_files" ADD CONSTRAINT "client_files_folder_id_fkey" FOREIGN KEY ("folder_id") REFERENCES "client_folders"("id") ON DELETE SET NULL ON UPDATE CASCADE;

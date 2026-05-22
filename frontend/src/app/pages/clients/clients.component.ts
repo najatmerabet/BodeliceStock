@@ -74,7 +74,8 @@ pendingClientFiles: {
     return arr;
   }
 
-  
+
+  // Autocomplete Villf00159be8769d5688090d2c808e
   readonly VILLES_MAROC = [
     'Tanger','Tétouan','Al Hoceima','Larache','Asilah','Chefchaouen','Fnideq','Martil',
     'Casablanca','Mohammadia','El Jadida','Settat','Berrechid','Benslimane',
@@ -104,6 +105,9 @@ pendingClientFiles: {
     this.cdr.markForCheck();
   }
 
+
+
+
   constructor(
     private clientsService: ClientsService,
     private factureService: FactureService,
@@ -112,6 +116,7 @@ pendingClientFiles: {
     private clientFichiersService: ClientFichiersService,
     private router: Router
   ) {}
+
 
   ngOnInit(): void {
     this.loadClients();
