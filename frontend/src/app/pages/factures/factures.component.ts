@@ -286,33 +286,68 @@ async generatePDF(f: Facture): Promise<void> {
       const CX = 105;
       const CY = LOGO_Y;
       const CW = W - CX - MR;
-      const CH = 44;
 
       const client = full.client || {};
+      
+      // Calculate dynamic client block height
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      let addressLines: string[] = [];
+      if (client.adresse) {
+        addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
+      }
+      
+      let textHeight = 12; // name offset
+      textHeight += 7; // address start offset
+      if (addressLines.length > 0) {
+        textHeight += (addressLines.length - 1) * 4.5;
+      }
+      textHeight += 7; // cpVille offset
+      if (client.ice) textHeight += 4;
+      if (client.reference) textHeight += 4;
+      const CH = Math.max(44, textHeight + 4);
+
       doc.setFillColor(...LIGHT);
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
+      let currentY = CY + 12;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
-      doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
+      doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
 
+      currentY += 7;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
-      if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
+      if (addressLines.length > 0) {
+        addressLines.forEach((line: string) => {
+          doc.text(line, CX + 3, currentY);
+          currentY += 4.5;
+        });
+      }
 
-      doc.setFont('helvetica', 'normal');
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
-      if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
+      if (cpVille) {
+        doc.setFont('helvetica', 'normal');
+        doc.text(cpVille, CX + 3, currentY);
+        currentY += 6.5;
+      } else {
+        currentY += 2;
+      }
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
       doc.setTextColor(...NOIR);
-      if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
-      if (client.reference) doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, CY + 37);
+      if (client.ice) {
+        doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
+        currentY += 4;
+      }
+      if (client.reference) {
+        doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
+      }
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
