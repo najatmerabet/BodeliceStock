@@ -295,7 +295,7 @@ async generatePDF(f: Facture): Promise<void> {
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
 
@@ -304,7 +304,7 @@ async generatePDF(f: Facture): Promise<void> {
       doc.setTextColor(...NOIR);
       if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
       if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
 
@@ -313,7 +313,6 @@ async generatePDF(f: Facture): Promise<void> {
       doc.setTextColor(...NOIR);
       if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
       if (client.reference) doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, CY + 37);
-      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, client.reference ? CY + 41 : CY + 40);
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
@@ -469,48 +468,6 @@ async generatePDF(f: Facture): Promise<void> {
         doc.text(value, BOX_X + BOX_W - 3, textY, { align: 'right' });
       });
 
-      // TOTAL TTC en gras à droite du tableau (encadré)
-      const summaryX = BOX_X + BOX_W + 10;
-      const summaryY = tableEndY + 4;
-      const summaryW = 55;
-      const summaryH = 20;
-      
-      doc.setFillColor(...LIGHT);
-      doc.setDrawColor(...NOIR);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(summaryX, summaryY, summaryW, summaryH, 2, 2, 'FD');
-      
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...GRIS);
-      doc.text('TOTAL TTC', summaryX + summaryW/2, summaryY + 5, { align: 'center' });
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...NOIR);
-      doc.text(`${totalTTC.toFixed(2)} DH`, summaryX + summaryW/2, summaryY + 14, { align: 'center' });
-
-      if (reste > 0) {
-        const restX = summaryX;
-        const restY = summaryY + summaryH + 5;
-        const restW = summaryW;
-        const restH = 14;
-        
-        doc.setFillColor(reste > 0 ? 220 : 40, reste > 0 ? 53 : 167, reste > 0 ? 69 : 69);
-        doc.setDrawColor(reste > 0 ? 180 : 30, reste > 0 ? 30 : 130, reste > 0 ? 30 : 50);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(restX, restY, restW, restH, 2, 2, 'FD');
-        
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text('RESTE À PAYER', restX + restW/2, restY + 4, { align: 'center' });
-        
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text(`${reste.toFixed(2)} DH`, restX + restW/2, restY + 10, { align: 'center' });
-      }
 
       // 7. HISTORIQUE DES PAIEMENTS à côté du bloc totaux
       const paiements: any[] = full.paiements || [];

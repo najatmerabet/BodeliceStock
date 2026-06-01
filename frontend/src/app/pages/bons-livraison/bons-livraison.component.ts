@@ -650,7 +650,7 @@ export class BonsLivraisonComponent implements OnInit {
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
 
@@ -659,7 +659,7 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setTextColor(...NOIR);
       if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
       if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
 
@@ -668,7 +668,6 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setTextColor(...NOIR);
       if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
       if (client.reference) doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, CY + 37);
-      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, client.reference ? CY + 41 : CY + 40);
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
@@ -799,26 +798,6 @@ export class BonsLivraisonComponent implements OnInit {
       doc.text('TOTAL', BOX_X + 3, textY);
       doc.text(`${totalBL.toFixed(2)} DH`, BOX_X + BOX_W - 3, textY, { align: 'right' });
 
-      // TOTAL TTC en gras à droite du tableau (encadré)
-      const summaryX = BOX_X + BOX_W + 8;
-      const summaryY = tableEndY + 4;
-      const summaryW = 55;
-      const summaryH = 16;
-      
-      doc.setFillColor(...LIGHT);
-      doc.setDrawColor(...NOIR);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(summaryX, summaryY, summaryW, summaryH, 2, 2, 'FD');
-      
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...GRIS);
-      doc.text('TOTAL', summaryX + summaryW/2, summaryY + 4, { align: 'center' });
-      
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...NOIR);
-      doc.text(`${totalBL.toFixed(2)} DH`, summaryX + summaryW/2, summaryY + 12, { align: 'center' });
 
       // 7. FOOTER
       const FY = H - 16;

@@ -283,7 +283,7 @@ export class ProformasComponent implements OnInit {
       
 
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       doc.text((client.nom || '—').toUpperCase(), CX + 3, CY + 12);
 
@@ -292,7 +292,7 @@ export class ProformasComponent implements OnInit {
       doc.setTextColor(...NOIR);
       if (client.adresse) doc.text(client.adresse.toUpperCase(), CX + 3, CY + 19);
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('helvetica', 'normal');
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
       if (cpVille) doc.text(cpVille, CX + 3, CY + 26);
 
@@ -301,7 +301,6 @@ export class ProformasComponent implements OnInit {
       doc.setTextColor(...NOIR);
       if (client.ice) doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, CY + 33);
       if (client.reference) doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, CY + 37);
-      if (client.id) doc.text(`N° CLIENT: ${client.id}`, CX + 3, client.reference ? CY + 41 : CY + 40);
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
