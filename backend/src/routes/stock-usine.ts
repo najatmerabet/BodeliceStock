@@ -30,6 +30,18 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
       where: Object.keys(dateFilter).length > 0 ? dateFilter : undefined
     });
 
+    // Récupérer tous les transferts historiques pour calculer les stocks actuels Tanger/Marrakech
+    const transferts = await prisma.stockMouvement.findMany({
+      where: { type: 'TRANSFERT' }
+    });
+
+    const transferMap = new Map<number, number>();
+    for (const t of transferts) {
+      const pid = t.produitId;
+      const d = Number(t.delta);
+      transferMap.set(pid, (transferMap.get(pid) || 0) + d);
+    }
+
     const result = produits.map(p => {
       // Filtrer les mouvements pour ce produit
       const mvtsProduit = mouvements.filter(m => m.produitId === p.id);
@@ -46,6 +58,8 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
         .reduce((sum, m) => sum + Math.abs(Number(m.delta)), 0);
 
       const stockFinal = Number(p.quantite);
+      const stockMarrakech = transferMap.get(p.id) || 0;
+      const stockTanger = stockFinal - stockMarrakech;
       const entreesTotal = stockFinal + sorties;
 
       return {
@@ -57,7 +71,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
         unite: p.unite,
         entrees: entreesTotal,
         sorties,
-        stockFinal
+        stockFinal,
+        stockTanger,
+        stockMarrakech
       };
     });
 

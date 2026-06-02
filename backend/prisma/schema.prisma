@@ -69,6 +69,7 @@ model BonLivraison {
   date       DateTime         @default(now())
   total      Decimal          @default(0) @db.Decimal(10, 2)
   statut     String           @default("A FACTURER") // A FACTURER, PROFORMA, FACTURÉ
+  type       String           @default("NORMAL")     // NORMAL, TRANSFERT
   client     Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   facture    Facture?         @relation(fields: [factureId], references: [id], onDelete: Cascade)
   proforma   FactureProforma? @relation(fields: [proformaId], references: [id], onDelete: Cascade)

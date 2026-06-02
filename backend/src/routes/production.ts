@@ -42,6 +42,16 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
       orderBy: { date: 'asc' }
     });
 
+    // Récupérer tous les transferts pour calculer stock Tanger/Marrakech
+    const transferts = await prisma.stockMouvement.findMany({
+      where: { type: 'TRANSFERT' }
+    });
+
+    const transferMap = new Map<number, number>();
+    for (const t of transferts) {
+      transferMap.set(t.produitId, (transferMap.get(t.produitId) || 0) + Number(t.delta));
+    }
+
     // Organiser les données pour le tableau matrice
     // { "2025-05-22": { [produitId]: quantite } }
     const matrix: { [date: string]: { [produitId: number]: number } } = {};
@@ -67,13 +77,21 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
     // Formater la réponse
     const sortedDates = Array.from(datesSet).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // Plus récent en haut
     
-    const formattedProduits = produits.map(p => ({
-      id: p.id,
-      nom: p.nom,
-      categorie: p.categorie || 'SANS CATÉGORIE',
-      poidsUnitaire: Number(p.poidsUnitaire),
-      unite: p.unite
-    })).sort((a, b) => {
+    const formattedProduits = produits.map(p => {
+      const stockTotal = Number(p.quantite);
+      const stockMarrakech = transferMap.get(p.id) || 0;
+      const stockTanger = stockTotal - stockMarrakech;
+      return {
+        id: p.id,
+        nom: p.nom,
+        categorie: p.categorie || 'SANS CATÉGORIE',
+        poidsUnitaire: Number(p.poidsUnitaire),
+        unite: p.unite,
+        stockTotal,
+        stockTanger,
+        stockMarrakech
+      };
+    }).sort((a, b) => {
       if (a.categorie === b.categorie) {
         return a.poidsUnitaire - b.poidsUnitaire; // Trier par poids dans la même catégorie
       }
@@ -145,4 +163,123 @@ router.post('/entree', authMiddleware, async (req: Request, res: Response, next:
   }
 });
 
+async function generateNumeroBL(): Promise<string> {
+  const all = await prisma.bonLivraison.findMany({ select: { numero: true }, orderBy: { numero: 'asc' } });
+  const usedNums = new Set(
+    all.map(bl => parseInt(bl.numero.replace('BL-', ''), 10)).filter(n => !isNaN(n))
+  );
+  let num = 1;
+  while (usedNums.has(num)) num++;
+  return `BL-${String(num).padStart(4, '0')}`;
+}
+
+// POST /api/production/transfert
+router.post('/transfert', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { lignes } = req.body;
+
+    if (!Array.isArray(lignes) || lignes.length === 0) {
+      return res.status(400).json({ error: 'lignes[] est obligatoire' });
+    }
+
+    // Validation
+    for (const l of lignes) {
+      const n = Number(l.nbUnites);
+      if (isNaN(n) || n <= 0) {
+        return res.status(400).json({ error: `Nombre d'unités invalide pour le produit ${l.produitId}` });
+      }
+    }
+
+    // Trouver ou créer le client PRODMEAT-MARRAKECH
+    let client = await prisma.client.findFirst({
+      where: { nom: 'PRODMEAT-MARRAKECH' }
+    });
+
+    if (!client) {
+      client = await prisma.client.create({
+        data: {
+          nom: 'PRODMEAT-MARRAKECH',
+          reference: 'PRODMEAT-MARRAKECH',
+          adresse: 'PRODMEAT-MARRAKECH',
+          ville: 'Marrakech'
+        }
+      });
+    }
+
+    const numero = await generateNumeroBL();
+
+    let totalBL = 0;
+    const lignesData: any[] = [];
+
+    for (const l of lignes) {
+      const prod = await prisma.produit.findUnique({ where: { id: Number(l.produitId) } });
+      if (!prod) {
+        return res.status(404).json({ error: `Produit id=${l.produitId} non trouvé` });
+      }
+
+      const n = Number(l.nbUnites);
+      const pu = Number(l.poidsUnitaire || prod.poidsUnitaire || 1);
+      const q = n * pu;
+      const pr = Number(l.prix || prod.prixUnitaire || 0);
+      const totalLigne = q * pr;
+      totalBL += totalLigne;
+
+      lignesData.push({
+        produitId: prod.id,
+        nbUnites: n,
+        poidsUnitaire: pu,
+        quantite: q,
+        prix: pr,
+        total: totalLigne
+      });
+    }
+
+    const newBl = await prisma.$transaction(async (tx) => {
+      // Créer le BL de type TRANSFERT
+      const bl = await tx.bonLivraison.create({
+        data: {
+          numero,
+          clientId: client.id,
+          total: totalBL,
+          type: 'TRANSFERT',
+          lignes: { create: lignesData },
+        },
+        include: { client: true, lignes: { include: { produit: true } } },
+      });
+
+      // Créer les mouvements de type TRANSFERT sans modifier la quantité globale du produit
+      for (const l of lignesData) {
+        const prod = await tx.produit.findUnique({ where: { id: l.produitId } });
+        const currentQte = Number(prod?.quantite || 0);
+
+        await tx.stockMouvement.create({
+          data: {
+            produitId: l.produitId,
+            type: 'TRANSFERT',
+            ancienneQte: currentQte,
+            nouvelleQte: currentQte,
+            delta: l.nbUnites,
+            motif: `Transfert Tanger -> Marrakech (BL ${bl.numero})`,
+          },
+        });
+      }
+
+      return bl;
+    });
+
+    await createLog({
+      action: 'CREATE',
+      entity: 'BonLivraison',
+      entityId: newBl.id,
+      description: `Transfert Tanger -> Marrakech créé (BL: ${newBl.numero})`,
+      userId: (req as any).user?.userId,
+    });
+
+    res.status(201).json(newBl);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
+

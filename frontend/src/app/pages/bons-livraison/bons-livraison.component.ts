@@ -869,7 +869,32 @@ export class BonsLivraisonComponent implements OnInit {
   }
 
   getStockDispo(produitId: number): number {
-    return this.getProduit(produitId)?.quantite || 0;
+    const p = this.getProduit(produitId);
+    return p ? Number(p.quantite) : 0;
+  }
+
+  willStockGoNegative(produitId: number): boolean {
+    const p = this.getProduit(produitId);
+    if (!p) return false;
+
+    let availableStock = Number(p.quantite);
+
+    if (this.view === 'edit' && this.editingBl) {
+      const originalLigne = this.editingBl.lignes.find(ol => ol.produitId === produitId);
+      if (originalLigne) {
+        availableStock += Number(originalLigne.nbUnites || 0);
+      }
+    }
+
+    let totalUnitsInLignes = this.form.lignes
+      .filter(l => l.produitId === produitId)
+      .reduce((sum, l) => sum + (l.nbUnites || 0), 0);
+
+    if (Number(this.newLigne.produitId) === produitId) {
+      totalUnitsInLignes += Number(this.newLigne.nbUnites || 0);
+    }
+
+    return availableStock < totalUnitsInLignes;
   }
 
   trackByLigne(_i: number, l: LigneBL): number { return l.produitId; }

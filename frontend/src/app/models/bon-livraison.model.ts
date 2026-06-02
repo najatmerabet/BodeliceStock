@@ -21,6 +21,7 @@ export interface BonLivraison {
   date: string;
   total: number;
   statut: string;
+  type?: string;
   lignes: LigneBL[];
   client?: any;
 }

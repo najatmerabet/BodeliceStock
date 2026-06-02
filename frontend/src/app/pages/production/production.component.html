@@ -11,6 +11,9 @@
       <button class="btn btn-outline" (click)="exportExcel()">
         <span class="material-symbols-rounded">table_view</span> Excel
       </button>
+      <button class="btn btn-outline" style="background: #ea580c; color: white; border-color: #ea580c;" (click)="openTransferModal()">
+        <span class="material-symbols-rounded">local_shipping</span> Transfert Marrakech
+      </button>
       <button class="btn btn-primary" (click)="openAddModal()">
         <span class="material-symbols-rounded">add</span> Ajouter
       </button>
@@ -63,6 +66,28 @@
           </tr>
         </thead>
         <tbody>
+          <!-- Stock Tanger -->
+          <tr class="stock-header-row tanger-row">
+            <td class="cell-date-title">Stock Tanger</td>
+            <td *ngFor="let p of produits" class="cell-stock-val" [title]="'Stock Tanger: ' + p.nom">
+              {{ p.stockTanger | number:'1.0-2' }} {{ p.unite }}
+            </td>
+          </tr>
+          <!-- Stock Marrakech -->
+          <tr class="stock-header-row marrakech-row">
+            <td class="cell-date-title">Stock Marrakech</td>
+            <td *ngFor="let p of produits" class="cell-stock-val" [title]="'Stock Marrakech: ' + p.nom">
+              {{ p.stockMarrakech | number:'1.0-2' }} {{ p.unite }}
+            </td>
+          </tr>
+          <!-- Stock Total -->
+          <tr class="stock-header-row total-row">
+            <td class="cell-date-title">Stock Total</td>
+            <td *ngFor="let p of produits" class="cell-stock-val" [title]="'Stock Total: ' + p.nom">
+              {{ p.stockTotal | number:'1.0-2' }} {{ p.unite }}
+            </td>
+          </tr>
+
           <tr *ngFor="let date of dates; let i = index" class="date-row">
             <td class="cell-date">
               {{ date | date:'dd/MM/yy' }}
@@ -126,6 +151,115 @@
           <span class="material-symbols-rounded">save</span>
           {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRANSFER MODAL ═══ -->
+  <div *ngIf="showTransferModal" class="overlay" (click)="closeTransferModal()">
+    <div class="modal" style="max-width: 650px;" (click)="$event.stopPropagation()">
+      <div class="m-head">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="material-symbols-rounded" style="color: #ea580c; font-size:24px;">local_shipping</span>
+          <div>
+            <h3 style="margin:0;">Transfert Tanger → Marrakech</h3>
+            <p style="margin:0;font-size:0.75rem;color:#64748B;">Créer un transfert de stock et générer le bon de livraison</p>
+          </div>
+        </div>
+        <button class="m-close" (click)="closeTransferModal()">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="m-body" style="padding: 20px;">
+        <!-- Ajouter produit de transfert -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-bottom:20px;">
+          <h4 style="margin:0 0 10px 0; font-size:0.85rem; color:#475569; text-transform:uppercase; font-weight:700;">Ajouter un produit au transfert</h4>
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:10px; align-items:end;">
+            <div class="fld" style="margin:0;">
+              <label style="font-size:0.75rem;">Produit</label>
+              <select [(ngModel)]="newTransferLigne.produitId" (change)="onTransferProduitChange()" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                <option [value]="0" disabled>Sélectionner un produit...</option>
+                <optgroup *ngFor="let cat of categories" [label]="cat.nom">
+                  <option *ngFor="let p of cat.produits" [value]="p.id">{{ p.nom }}</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="fld" style="margin:0;">
+              <label style="font-size:0.75rem;">Nombre d'unités</label>
+              <input type="number" [(ngModel)]="newTransferLigne.nbUnites" min="1" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
+            </div>
+            <div class="fld" style="margin:0;">
+              <label style="font-size:0.75rem;">Poids/Unité (kg)</label>
+              <input type="number" [(ngModel)]="newTransferLigne.poidsUnitaire" step="0.1" min="0" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;" />
+            </div>
+            <button class="btn btn-primary" (click)="addTransferLigne()" [disabled]="!newTransferLigne.produitId || newTransferLigne.nbUnites <= 0" style="padding: 9px 15px; background: #ea580c; border-color: #ea580c;">
+              <span class="material-symbols-rounded">add</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table des lignes ajoutées -->
+        <div *ngIf="transferLignes.length > 0" style="max-height: 200px; overflow-y: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+              <tr style="background:#f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding:8px; text-align:left; font-weight:700; color:#475569;">Référence</th>
+                <th style="padding:8px; text-align:left; font-weight:700; color:#475569;">Produit</th>
+                <th style="padding:8px; text-align:center; font-weight:700; color:#475569;">Unités</th>
+                <th style="padding:8px; text-align:right; font-weight:700; color:#475569;">Poids Total</th>
+                <th style="padding:8px; text-align:center; width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of transferLignes; let idx = index" style="border-top:1px solid #e2e8f0;">
+                <td style="padding:8px;"><strong>{{ l.produitRef }}</strong></td>
+                <td style="padding:8px;">{{ l.produitNom }}</td>
+                <td style="padding:8px; text-align:center;">{{ l.nbUnites }} {{ l.produitUnite }}s</td>
+                <td style="padding:8px; text-align:right; font-weight:700;">{{ l.quantite | number:'1.2-2' }} kg</td>
+                <td style="padding:8px; text-align:center;">
+                  <button style="border:none; background:none; color:#ef4444; cursor:pointer;" (click)="removeTransferLigne(idx)">
+                    <span class="material-symbols-rounded" style="font-size:16px;">delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="transferLignes.length === 0" style="text-align:center; padding:30px; color:#94a3b8; border:1.5px dashed #cbd5e1; border-radius:8px;">
+          <span class="material-symbols-rounded" style="font-size:32px;">inbox</span>
+          <p style="margin:5px 0 0 0; font-size:0.85rem;">Aucun produit ajouté pour le moment</p>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="btn btn-outline" (click)="closeTransferModal()">Annuler</button>
+        <button class="btn btn-primary" style="background:#ea580c; border-color:#ea580c;" (click)="executeTransfer()" [disabled]="saving || transferLignes.length === 0">
+          <span class="material-symbols-rounded">{{ saving ? 'hourglass_empty' : 'check_circle' }}</span>
+          {{ saving ? 'Exécution...' : 'Valider & Imprimer le Bon' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PDF PREVIEW MODAL ═══ -->
+  <div *ngIf="pdfPreviewUrl" class="pdf-overlay" (click)="closePdfPreview()">
+    <div class="pdf-modal" (click)="$event.stopPropagation()">
+      <div class="pdf-modal-hdr">
+        <div class="pdf-modal-title">
+          <span class="material-symbols-rounded">picture_as_pdf</span>
+          <span>{{ pdfPreviewName }}</span>
+        </div>
+        <div class="pdf-modal-actions">
+          <button class="pdf-btn-dl" (click)="downloadPdf()">
+            <span class="material-symbols-rounded">download</span>
+            Télécharger
+          </button>
+          <button class="pdf-btn-close" (click)="closePdfPreview()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="pdf-viewer-wrap">
+        <iframe [src]="pdfPreviewUrl" class="pdf-iframe" type="application/pdf"></iframe>
       </div>
     </div>
   </div>

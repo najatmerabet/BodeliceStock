@@ -34,12 +34,30 @@
       </div>
     </div>
     <div class="stat-card">
+      <div class="stat-icon final-icon" style="background: #FFFBEB; color: #D97706;">
+        <span class="material-symbols-rounded">warehouse</span>
+      </div>
+      <div class="stat-info">
+        <span class="stat-val" style="color: #B45309;">{{ stockTangerTotal | number:'1.0-0' }}</span>
+        <span class="stat-lbl">Stock Tanger</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon final-icon" style="background: #ECFEFF; color: #0891B2;">
+        <span class="material-symbols-rounded">local_shipping</span>
+      </div>
+      <div class="stat-info">
+        <span class="stat-val" style="color: #0E7490;">{{ stockMarrakechTotal | number:'1.0-0' }}</span>
+        <span class="stat-lbl">Stock Marrakech</span>
+      </div>
+    </div>
+    <div class="stat-card">
       <div class="stat-icon final-icon" [ngClass]="stockTotal < 0 ? 'negative-icon' : ''">
         <span class="material-symbols-rounded">inventory_2</span>
       </div>
       <div class="stat-info">
         <span class="stat-val" [ngClass]="stockTotal < 0 ? 'text-sortie' : 'text-final'">{{ stockTotal | number:'1.0-0' }}</span>
-        <span class="stat-lbl">Stock Final (NB)</span>
+        <span class="stat-lbl">Stock Total</span>
       </div>
     </div>
   </div>
@@ -74,15 +92,17 @@
           <tr>
             <th>Désignation produit</th>
             <th class="c">Poids (KG/Unité)</th>
-            <th class="c">Entrées (NB)</th>
-            <th class="c">Sorties (NB)</th>
-            <th class="c">Stock final (NB)</th>
+            <th class="c">Entrées</th>
+            <th class="c">Sorties</th>
+            <th class="c">Stock Tanger</th>
+            <th class="c">Stock Marrakech</th>
+            <th class="c">Stock Total</th>
           </tr>
         </thead>
         <ng-container *ngFor="let group of groupedData">
           <tbody>
             <tr class="cat-row">
-              <td colspan="5">
+              <td colspan="7">
                 <div class="cat-row-inner">
                   <span class="cat-bar"></span>
                   <span class="cat-name">{{ group.categorie }}</span>
@@ -103,6 +123,12 @@
               <td class="c">
                 <span class="val-sortie" *ngIf="item.sorties > 0">{{ item.sorties | number:'1.0-0' }}</span>
                 <span class="val-muted" *ngIf="!item.sorties || item.sorties === 0">—</span>
+              </td>
+              <td class="c">
+                <span style="font-weight: 600; color: #B45309;">{{ item.stockTanger | number:'1.0-0' }}</span>
+              </td>
+              <td class="c">
+                <span style="font-weight: 600; color: #0E7490;">{{ item.stockMarrakech | number:'1.0-0' }}</span>
               </td>
               <td class="c">
                 <span class="val-final">{{ item.stockFinal | number:'1.0-0' }}</span>

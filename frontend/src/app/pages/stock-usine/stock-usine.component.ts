@@ -25,6 +25,8 @@ export class StockUsineComponent implements OnInit {
   totalEntrees = 0;
   totalSorties = 0;
   stockTotal = 0;
+  stockTangerTotal = 0;
+  stockMarrakechTotal = 0;
 
   filteredData: any[] = [];
 
@@ -58,6 +60,8 @@ export class StockUsineComponent implements OnInit {
     this.totalEntrees = this.filteredData.reduce((acc, curr) => acc + Number(curr.entrees || 0), 0);
     this.totalSorties = this.filteredData.reduce((acc, curr) => acc + Number(curr.sorties || 0), 0);
     this.stockTotal = this.filteredData.reduce((acc, curr) => acc + Number(curr.stockFinal || 0), 0);
+    this.stockTangerTotal = this.filteredData.reduce((acc, curr) => acc + Number(curr.stockTanger || 0), 0);
+    this.stockMarrakechTotal = this.filteredData.reduce((acc, curr) => acc + Number(curr.stockMarrakech || 0), 0);
   }
 
   groupData(): void {
@@ -93,7 +97,9 @@ export class StockUsineComponent implements OnInit {
       'POIDS (KG/Unité)': `${item.poidsUnitaire} KG / ${item.unite.toUpperCase()}`,
       'ENTRÉES (NB)': item.entrees,
       'SORTIES (NB)': item.sorties,
-      'STOCK FINAL (NB)': item.stockFinal
+      'STOCK TANGER (NB)': item.stockTanger,
+      'STOCK MARRAKECH (NB)': item.stockMarrakech,
+      'STOCK TOTAL (NB)': item.stockFinal
     }));
 
     const ws = xlsx.utils.json_to_sheet(rows);
@@ -119,7 +125,7 @@ export class StockUsineComponent implements OnInit {
     this.groupedData.forEach(group => {
       // Ligne d'en-tête de catégorie
       body.push([
-        { content: group.categorie.toUpperCase(), colSpan: 5, styles: { fillColor: [220, 220, 220], fontStyle: 'bold' } }
+        { content: group.categorie.toUpperCase(), colSpan: 7, styles: { fillColor: [220, 220, 220], fontStyle: 'bold' } }
       ]);
       
       group.items.forEach(item => {
@@ -128,6 +134,8 @@ export class StockUsineComponent implements OnInit {
           `${item.poidsUnitaire} KG / ${item.unite.toUpperCase()}`,
           item.entrees,
           item.sorties,
+          item.stockTanger,
+          item.stockMarrakech,
           item.stockFinal
         ]);
       });
@@ -135,16 +143,18 @@ export class StockUsineComponent implements OnInit {
 
     autoTable(doc, {
       startY: 30,
-      head: [['DÉSIGNATION PRODUIT', 'POIDS (KG/Unité)', 'ENTRÉES (NB)', 'SORTIES (NB)', 'STOCK FINAL (NB)']],
+      head: [['DÉSIGNATION PRODUIT', 'POIDS (KG/Unité)', 'ENTRÉES', 'SORTIES', 'ST. TANGER', 'ST. KECH', 'ST. TOTAL']],
       body: body,
       theme: 'grid',
       headStyles: { fillColor: [150, 150, 150], textColor: 0, fontStyle: 'bold', halign: 'center' },
       columnStyles: {
-        0: { cellWidth: 80 },
-        1: { halign: 'center' },
-        2: { halign: 'center', fillColor: [230, 245, 230] }, // Vert clair (entrées)
-        3: { halign: 'center', fillColor: [245, 230, 245] }, // Rose clair (sorties)
-        4: { halign: 'center', fontStyle: 'bold' }
+        0: { cellWidth: 50 },
+        1: { halign: 'center', cellWidth: 35 },
+        2: { halign: 'center', fillColor: [230, 245, 230], cellWidth: 20 },
+        3: { halign: 'center', fillColor: [245, 230, 245], cellWidth: 20 },
+        4: { halign: 'center', cellWidth: 22 },
+        5: { halign: 'center', cellWidth: 22 },
+        6: { halign: 'center', fontStyle: 'bold', cellWidth: 22 }
       }
     });
 

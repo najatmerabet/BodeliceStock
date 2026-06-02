@@ -2,11 +2,13 @@ import { Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
 import { Authlayoutcomponent } from './authlayoutcomponent/authlayoutcomponent';
 import { AuthGuard } from './pages/auth/auth.guard';
+import { NoAuthGuard } from './pages/auth/no-auth.guard';
 
 export const routes: Routes = [
   {
      path: 'auth',
      component: Authlayoutcomponent,
+     canActivate: [NoAuthGuard],
      children:[
       {
          path:'login',  loadComponent: () => import('./pages/auth/auth.component').then(m => m.Auth)

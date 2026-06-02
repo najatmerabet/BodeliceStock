@@ -136,17 +136,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
       }
     }
 
-    // Vérification stock
+    // Vérification existence produit
     for (const l of lignes) {
       const produit = await prisma.produit.findUnique({ where: { id: Number(l.produitId) } });
       if (!produit) {
         return res.status(400).json({ error: `Produit id=${l.produitId} non trouvé` });
-      }
-      const unitsNeeded = Number(l.nbUnites || 1);
-      if (Number(produit.quantite) < unitsNeeded) {
-        return res.status(400).json({
-          error: `Stock insuffisant pour "${produit.nom}" — dispo: ${produit.quantite} ${produit.unite}s, demandé: ${unitsNeeded}`,
-        });
       }
     }
 
@@ -269,18 +263,10 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
     const produitMap = new Map<number, string>();
     produits.forEach(p => produitMap.set(p.id, p.nom));
 
-    // Vérifier stock (restaurer ancien d'abord virtuellement)
-    const stockMap = new Map<number, number>();
-    for (const ol of existingBl.lignes) {
-      stockMap.set(ol.produitId, (stockMap.get(ol.produitId) || 0) + Number(ol.nbUnites));
-    }
+    // Vérifier existence produit
     for (const nl of lignesData) {
       const produit = await prisma.produit.findUnique({ where: { id: nl.produitId } });
       if (!produit) return res.status(400).json({ error: `Produit id=${nl.produitId} non trouvé` });
-      const currentStock = Number(produit.quantite) + (stockMap.get(nl.produitId) || 0);
-      if (currentStock < nl.nbUnites) {
-        return res.status(400).json({ error: `Stock insuffisant pour "${produit.nom}" — dispo: ${currentStock}, demandé: ${nl.nbUnites}` });
-      }
     }
 
     const updated = await prisma.$transaction(async (tx) => {

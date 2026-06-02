@@ -30,4 +30,8 @@ export class StockService {
     if (date) body.date = date;
     return this.http.post<any>(`${this.apiUrlProd}/entree`, body);
   }
+
+  createTransfert(lignes: any[]): Observable<any> {
+    return this.http.post<any>(`${this.apiUrlProd}/transfert`, { lignes });
+  }
 }

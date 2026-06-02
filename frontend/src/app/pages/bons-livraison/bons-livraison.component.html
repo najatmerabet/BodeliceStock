@@ -299,9 +299,15 @@
               </button>
             </div>
           </div>
-          <div *ngIf="newLigne.produitId && newLigne.quantite > 0" class="ligne-preview">
-            <span>Poids total : <strong>{{ newLigne.quantite | number:'1.2-2' }} kg</strong></span>
-            <span>Sous-total : <strong>{{ newLigne.total | number:'1.2-2' }} DH</strong></span>
+          <div *ngIf="newLigne.produitId && newLigne.quantite > 0" class="ligne-preview" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <span>Poids total : <strong>{{ newLigne.quantite | number:'1.2-2' }} kg</strong></span>
+              <span style="margin-left:16px;">Sous-total : <strong>{{ newLigne.total | number:'1.2-2' }} DH</strong></span>
+            </div>
+            <div *ngIf="willStockGoNegative(newLigne.produitId)" style="color:#F59E0B;display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;">
+              <span class="material-symbols-rounded" style="font-size:18px;">warning</span>
+              Stock insuffisant (deviendra négatif)
+            </div>
           </div>
         </div>
 
@@ -330,6 +336,9 @@
                 <td>
                   <span class="ref-chip">{{ l.produitRef }}</span>
                   {{ l.produitNom }}
+                  <span *ngIf="willStockGoNegative(l.produitId)" class="stock-warning-icon" title="Stock insuffisant - passera en négatif" style="color:#F59E0B;margin-left:8px;vertical-align:middle;display:inline-flex;align-items:center;">
+                    <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
+                  </span>
                 </td>
                 <td class="tc"><span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} × {{ l.poidsUnitaire }}kg</span></td>
                 <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }} kg</td>
@@ -586,7 +595,13 @@
             </tr></thead>
             <tbody>
               <tr *ngFor="let l of form.lignes; trackBy: trackByLigne" class="bl-row">
-                <td><span class="ref-chip">{{ l.produitRef }}</span>{{ l.produitNom }}</td>
+                <td>
+                  <span class="ref-chip">{{ l.produitRef }}</span>
+                  {{ l.produitNom }}
+                  <span *ngIf="willStockGoNegative(l.produitId)" class="stock-warning-icon" title="Stock insuffisant - passera en négatif" style="color:#F59E0B;margin-left:8px;vertical-align:middle;display:inline-flex;align-items:center;">
+                    <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
+                  </span>
+                </td>
                 <td class="tc"><span class="unit-chip" *ngIf="l.nbUnites">{{ l.nbUnites }} × {{ l.poidsUnitaire }}kg</span></td>
                 <td class="tr mono-bold">{{ l.quantite | number:'1.2-2' }} kg</td>
                 <td class="tr mono-sm">{{ l.prix | number:'1.2-2' }}</td>
