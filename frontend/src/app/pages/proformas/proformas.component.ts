@@ -298,9 +298,13 @@ async generatePDF(p: FactureProforma): Promise<void> {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...NOIR);
-    doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
+   const nomLines = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6);
+nomLines.forEach((line: string) => {
+  doc.text(line, CX + 3, currentY);
+  currentY += 6;
+});
 
-    currentY += 7;
+    currentY += 2;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...NOIR);

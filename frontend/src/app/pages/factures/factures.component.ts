@@ -310,14 +310,16 @@ async generatePDF(f: Facture): Promise<void> {
       doc.setDrawColor(...NOIR);
       doc.setLineWidth(0.3);
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
-
       let currentY = CY + 12;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
-
-      currentY += 7;
+      const nomLines = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6);
+nomLines.forEach((line: string) => {
+  doc.text(line, CX + 3, currentY);
+  currentY += 6;
+});
+      currentY += 2;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);

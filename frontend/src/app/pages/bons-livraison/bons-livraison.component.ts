@@ -620,7 +620,7 @@ export class BonsLivraisonComponent implements OnInit {
 
       // 2. INFOS PRODMEAT
       const INFO_X = ML;
-      const INFO_Y = LOGO_Y + LOGO_H + 5;
+      const INFO_Y = LOGO_Y + LOGO_H -5;
 
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -637,11 +637,11 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
       doc.setFontSize(10);
-      prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 5 + i * 5));
+      prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 6 + i * 6));
 
       // 3. BLOC CLIENT
       const CX = 110;
-      const CY = 90;
+      const CY = INFO_Y;
       const CW = W - CX - MR;
       
       // Calculate dynamic client block height
@@ -652,7 +652,11 @@ export class BonsLivraisonComponent implements OnInit {
         addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW-6);
       }
       
-      let textHeight = 12; // name offset
+     doc.setFont('helvetica', 'bold');
+doc.setFontSize(12);
+const nomLinesCount = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6).length;
+let textHeight = 6 * nomLinesCount + 2; // ← remplace le 12 fixe
+textHeight += 7; // name offset
       textHeight += 7; // address start offset
       if (addressLines.length > 0) {
         textHeight += (addressLines.length - 1) * 4.5;
@@ -671,9 +675,13 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
+     const nomLines = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6);
+nomLines.forEach((line: string) => {
+  doc.text(line, CX + 3, currentY);
+  currentY += 6;
+});
 
-      currentY += 7;
+      currentY += 2;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
@@ -701,9 +709,9 @@ export class BonsLivraisonComponent implements OnInit {
         doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
         currentY += 5;
       }
-      if (client.reference) {
-        doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
-      }
+      // if (client.reference) {
+      //   doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
+      // }
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
@@ -711,7 +719,7 @@ export class BonsLivraisonComponent implements OnInit {
       doc.text('1/1', W - MR, CY + 5, { align: 'right' });
 
       // 4. BANDEAU "BON DE LIVRAISON N°" + date CY + CH + 25;
-      const BY = INFO_Y + 35 ;
+      const BY = CY + CH + 6 ;
       const BH = 9;
 
       const dateObj = bl.date ? new Date(bl.date) : new Date();
@@ -904,32 +912,7 @@ doc.text(`${poidsTotalCumul.toFixed(2)} kg`, POIDS_X + POIDS_W - 3, textY, { ali
   }
 
   getStockDispo(produitId: number): number {
-    const p = this.getProduit(produitId);
-    return p ? Number(p.quantite) : 0;
-  }
-
-  willStockGoNegative(produitId: number): boolean {
-    const p = this.getProduit(produitId);
-    if (!p) return false;
-
-    let availableStock = Number(p.quantite);
-
-    if (this.view === 'edit' && this.editingBl) {
-      const originalLigne = this.editingBl.lignes.find(ol => ol.produitId === produitId);
-      if (originalLigne) {
-        availableStock += Number(originalLigne.nbUnites || 0);
-      }
-    }
-
-    let totalUnitsInLignes = this.form.lignes
-      .filter(l => l.produitId === produitId)
-      .reduce((sum, l) => sum + (l.nbUnites || 0), 0);
-
-    if (Number(this.newLigne.produitId) === produitId) {
-      totalUnitsInLignes += Number(this.newLigne.nbUnites || 0);
-    }
-
-    return availableStock < totalUnitsInLignes;
+    return this.getProduit(produitId)?.quantite || 0;
   }
 
   trackByLigne(_i: number, l: LigneBL): number { return l.produitId; }
