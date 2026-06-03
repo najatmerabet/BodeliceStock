@@ -589,10 +589,10 @@ export class BonsLivraisonComponent implements OnInit {
       const lignes = (bl as any).lignes || [];
 
       // 1. LOGO BÔDÉLICE
-      const LOGO_X = ML;
-      const LOGO_Y = 8;
-      const LOGO_W = 40;
-      const LOGO_H = 40;
+      const LOGO_X = 10;
+      const LOGO_Y = -20;
+      const LOGO_W = 90;
+      const LOGO_H = 90;
 
       try {
         const logoImg = new Image();
@@ -619,36 +619,37 @@ export class BonsLivraisonComponent implements OnInit {
       }
 
       // 2. INFOS PRODMEAT
+      const INFO_X = ML;
       const INFO_Y = LOGO_Y + LOGO_H + 5;
 
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text('PRODMEAT', ML, INFO_Y);
+      doc.text('PRODMEAT', INFO_X, INFO_Y);
 
       const prodmeatLines = [
-        'BD MLY ISMAIL RES MLY ISMAIL N°22 ETG 5',
+        'Bd mly Ismail res mly Ismail N°22 etg 5',
         'N 19 - TANGER',
         'TÉL : 06 66 57 03 03',
-        'MAIL : SECRETARIATPRODMEAT@GMAIL.COM',
+        'MAIL : secretariatprodmeat@gmail.com',
         'N° ONSSA: MAPAV.34.21.24',
       ];
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.setFontSize(8);
-      prodmeatLines.forEach((line, i) => doc.text(line, ML, INFO_Y + 4 + i * 4));
+      doc.setFontSize(10);
+      prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 5 + i * 5));
 
       // 3. BLOC CLIENT
-      const CX = 105;
-      const CY = LOGO_Y;
+      const CX = 110;
+      const CY = 90;
       const CW = W - CX - MR;
       
       // Calculate dynamic client block height
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
       let addressLines: string[] = [];
       if (client.adresse) {
-        addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
+        addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW-6);
       }
       
       let textHeight = 12; // name offset
@@ -661,43 +662,44 @@ export class BonsLivraisonComponent implements OnInit {
       if (client.reference) textHeight += 4;
       const CH = Math.max(44, textHeight + 4);
 
-      doc.setFillColor(...LIGHT);
-      doc.setDrawColor(...BORDER);
+        doc.setFillColor(...WHITE);
+       doc.setDrawColor(...NOIR);
       doc.setLineWidth(0.3);
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
       let currentY = CY + 12;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
       doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
 
       currentY += 7;
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       if (addressLines.length > 0) {
         addressLines.forEach((line: string) => {
           doc.text(line, CX + 3, currentY);
-          currentY += 4.5;
+          currentY += 7;
         });
       }
 
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
       if (cpVille) {
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
         doc.text(cpVille, CX + 3, currentY);
-        currentY += 6.5;
+        currentY += 7;
       } else {
-        currentY += 2;
+        currentY += 7;
       }
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      doc.setFontSize(10);
       doc.setTextColor(...NOIR);
       if (client.ice) {
         doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
-        currentY += 4;
+        currentY += 5;
       }
       if (client.reference) {
         doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
@@ -708,13 +710,13 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setTextColor(...GRIS_L);
       doc.text('1/1', W - MR, CY + 5, { align: 'right' });
 
-      // 4. BANDEAU "BON DE LIVRAISON N°" + date
-      const BY = CY + CH + 25;
+      // 4. BANDEAU "BON DE LIVRAISON N°" + date CY + CH + 25;
+      const BY = INFO_Y + 35 ;
       const BH = 9;
 
       const dateObj = bl.date ? new Date(bl.date) : new Date();
       const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-      const rightText = dateStr;
+      // const rightText = dateStr;
 
       const PAD = 4;
       doc.setFontSize(8.5);
@@ -727,42 +729,32 @@ export class BonsLivraisonComponent implements OnInit {
 
       const LEFT_W = PAD + labelW + 4 + numeroW + PAD;
 
-      let RIGHT_W = 0;
-      if (rightText) {
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'normal');
-        RIGHT_W = Math.max(60, PAD + doc.getTextWidth(rightText) + PAD);
-      }
-
-      const BW = LEFT_W + RIGHT_W;
+     
 
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
-      doc.rect(ML, BY, BW, BH);
+      doc.rect(ML, BY, LEFT_W, BH);
 
-      if (rightText) {
-        doc.line(ML + LEFT_W, BY, ML + LEFT_W, BY + BH);
-      }
+      
 
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text('BON DE LIVRAISON N°', ML + 6, BY + BH - 2.5);
+      doc.text('BON DE LIVRAISON N°', ML + PAD, BY + BH - 2.5);
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
       doc.text(bl.numero || 'BL-XXXX', ML + PAD + labelW + 4, BY + BH - 2.5);
 
-      if (rightText) {
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...NOIR);
-        doc.text(rightText, ML + LEFT_W + PAD, BY + BH - 2.5);
-      }
+     
+      doc.setFontSize(9);
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(...NOIR);
+doc.text(dateStr, W - MR, BY + BH - 2.5, { align: 'right' });
 
- 
-
+     
+      const MIN_ROWS = 10;
       // 5. TABLEAU PRODUITS
       const tableData = lignes.map((l: any) => {
         const tva = Number(l.tva ?? l.produit?.tva ?? 0);
@@ -780,16 +772,20 @@ export class BonsLivraisonComponent implements OnInit {
         ];
       });
 
+      while (tableData.length < MIN_ROWS) {
+  tableData.push(['', '', '', '', '', '', '', '']);
+}
+
       autoTable(doc, {
         startY: BY + BH + 3,
         head: [['RÉF', 'DÉSIGNATION', 'TVA', 'QTE', 'UNITÉ', 'POIDS TOTAL', 'PRIX U HT', 'TOTAL HT']],
         body: tableData,
         theme: 'plain',
         styles: {
-          textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, minCellHeight: 10, fillColor: WHITE,
+          textColor: NOIR, lineColor: NOIR, lineWidth: 0, minCellHeight: 10, fillColor: WHITE,
         },
         headStyles: {
-          fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7.5, lineColor: BORDER, lineWidth: 0.3,
+          fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7.5, lineColor: NOIR, lineWidth: 0.3,
         },
         alternateRowStyles: { fillColor: WHITE },
         columnStyles: {
@@ -803,21 +799,60 @@ export class BonsLivraisonComponent implements OnInit {
           7: { cellWidth: 26, halign: 'right' as const },
         },
         tableWidth: 'auto',
+        didDrawCell: (data) => {
+          const { doc: d, cell, column, table } = data;
+    const lastCol = table.columns.length - 1;
+    d.setDrawColor(15, 23, 42);   // NOIR
+    d.setLineWidth(0.3);
+    // Bordure gauche de chaque colonne
+    d.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+    // Bordure droite uniquement pour la dernière colonne
+    if (column.index === lastCol) {
+      d.line(cell.x + cell.width, cell.y, cell.x + cell.width, cell.y + cell.height);
+    }
+
+    if(data.row.section === 'head'){
+       d.line(cell.x, cell.y + cell.height, cell.x + cell.width, cell.y + cell.height);
+    }
+        },
+ 
+       
       });
 
       // 6. BLOC TOTAUX
       const tableEndY: number = (doc as any).lastAutoTable?.finalY ?? 200;
+      const tableStartX = ML;
+      const tableEndX = ML + 20 + 45 + 12 + 14 + 16 + 20 + 26 + 26; 
+      doc.setDrawColor(15, 23, 42); // NOIR
+doc.setLineWidth(0.3);
+doc.line(tableStartX, tableEndY, tableEndX, tableEndY);
       const totalBL = Number(bl.total ?? 0);
-
+      const poidsTotalCumul = lignes.reduce((sum: number, l: any) => sum + (Number(l.quantite) || 0), 0);
       const totRows = [
         { label: 'TOTAL', value: `${totalBL.toFixed(2)} DH`, bold: true },
       ];
+      
 
       const ROW_H = 8;
-      const BOX_W = 70;
-      const BOX_X = W - MR - BOX_W;
       const BOX_Y = tableEndY + 4;
 
+      const POIDS_W=70;
+      const POIDS_X = ML;
+    
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(POIDS_X, tableEndY + 4, POIDS_W, ROW_H);
+      doc.setFillColor(...LIGHT);
+      doc.rect(POIDS_X,BOX_Y, POIDS_W,ROW_H, 'F');
+      const textY = BOX_Y + ROW_H - 2.5;
+doc.setFontSize(9);
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(...NOIR);
+doc.text('POIDS TOTAL', POIDS_X + 3, textY);
+doc.text(`${poidsTotalCumul.toFixed(2)} kg`, POIDS_X + POIDS_W - 3, textY, { align: 'right' });
+    
+      const BOX_W = 70;
+      const BOX_X = W - MR - BOX_W;
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
       doc.rect(BOX_X, BOX_Y, BOX_W, ROW_H);
@@ -825,7 +860,7 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setFillColor(...LIGHT);
       doc.rect(BOX_X, BOX_Y, BOX_W, ROW_H, 'F');
 
-      const textY = BOX_Y + ROW_H - 2.5;
+     
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
@@ -839,9 +874,9 @@ export class BonsLivraisonComponent implements OnInit {
       doc.setLineWidth(0.3);
       doc.line(ML, FY, W - MR, FY);
 
-      doc.setFontSize(6.2);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...GRIS);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
       doc.text('PRODMEAT - Bd mly Ismail res mly Ismail N°22 etg 5 - N 19 - TANGER', W / 2, FY + 4, { align: 'center' });
       doc.text('ICE : 003291478000039   R.C: 1328011   CNSS 4810442   Patente: 57225884   IF: 53783148', W / 2, FY + 8, { align: 'center' });
       doc.text('Attijariwafa Bank   007 640 00 14335000003128 43', W / 2, FY + 12, { align: 'center' });

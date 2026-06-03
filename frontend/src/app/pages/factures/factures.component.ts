@@ -232,11 +232,11 @@ async generatePDF(f: Facture): Promise<void> {
       doc.setFillColor(...WHITE);
       doc.rect(0, 0, W, H, 'F');
 
-      // 1. LOGO BÔDÉLICE
-      const LOGO_X = ML;
-      const LOGO_Y = 8;
-      const LOGO_W = 40;
-      const LOGO_H = 40;
+      // 1. LOGO
+      const LOGO_X = 10;
+      const LOGO_Y = -20;
+      const LOGO_W = 90;
+      const LOGO_H = 90;
 
       try {
         const logoImg = new Image();
@@ -263,104 +263,112 @@ async generatePDF(f: Facture): Promise<void> {
       }
 
       // 2. INFOS PRODMEAT
-      const INFO_Y = LOGO_Y + LOGO_H + 5;
+      const INFO_X = ML;
+      const INFO_Y = LOGO_Y + LOGO_H -10 ;
 
-      doc.setFontSize(9);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text('PRODMEAT', ML, INFO_Y);
+      doc.text('PRODMEAT', INFO_X, INFO_Y);
 
       const prodmeatLines = [
-        'BD MLY ISMAIL RES MLY ISMAIL N°22 ETG 5',
+        'Bd mly Ismail res mly Ismail N°22 etg 5',
         'N 19 - TANGER',
         'TÉL : 06 66 57 03 03',
-        'MAIL : SECRETARIATPRODMEAT@GMAIL.COM',
+        'MAIL : secretariatprodmeat@gmail.com',
         'N° ONSSA: MAPAV.34.21.24',
       ];
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.setFontSize(8);
-      prodmeatLines.forEach((line, i) => doc.text(line, ML, INFO_Y + 4 + i * 4));
+      doc.setFontSize(11);
+      prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 5 + i * 6));
 
       // 3. BLOC CLIENT
-      const CX = 105;
-      const CY = LOGO_Y;
+      const client = full.client || {};
+      const CX = 110;
+      const CY = INFO_Y-20 ; // ← aligné avec PRODMEAT
       const CW = W - CX - MR;
 
-      const client = full.client || {};
-      
-      // Calculate dynamic client block height
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
       let addressLines: string[] = [];
       if (client.adresse) {
         addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
       }
-      
-      let textHeight = 12; // name offset
-      textHeight += 7; // address start offset
+
+      let textHeight = 12;
+      textHeight += 7;
       if (addressLines.length > 0) {
         textHeight += (addressLines.length - 1) * 4.5;
       }
-      textHeight += 7; // cpVille offset
+      textHeight += 7;
       if (client.ice) textHeight += 4;
       if (client.reference) textHeight += 4;
       const CH = Math.max(44, textHeight + 4);
 
-      doc.setFillColor(...LIGHT);
-      doc.setDrawColor(...BORDER);
+      doc.setFillColor(...WHITE);
+      doc.setDrawColor(...NOIR);
       doc.setLineWidth(0.3);
       doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
       let currentY = CY + 12;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
       doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
 
       currentY += 7;
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       if (addressLines.length > 0) {
         addressLines.forEach((line: string) => {
           doc.text(line, CX + 3, currentY);
-          currentY += 4.5;
+          currentY += 7;
         });
       }
 
       const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
       if (cpVille) {
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
         doc.text(cpVille, CX + 3, currentY);
-        currentY += 6.5;
+        currentY += 7;
       } else {
-        currentY += 2;
+        currentY += 7;
       }
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      doc.setFontSize(10);
       doc.setTextColor(...NOIR);
       if (client.ice) {
         doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
-        currentY += 4;
+        currentY += 5;
       }
-      if (client.reference) {
-        doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
-      }
+
+      // if (client.reference) {
+      //   doc.text(`N° Client: ${client.reference}`.toUpperCase(), CX + 3, currentY);
+      // }
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...GRIS_L);
       doc.text('1/1', W - MR, CY + 5, { align: 'right' });
-
-      // 4. BANDEAU "FACTURE N°" + date
-      const BY = CY + CH + 25;
+      
+      if(client.reference) {
+        doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...NOIR);
+  doc.text(`N° CLIENT: ${client.reference}`.toUpperCase(), CX + 3, CY + CH + 5);
+      }
+      // 4. BANDEAU "FACTURE N°" + date à droite
+      const BY = CY + CH + 8;
       const BH = 9;
 
       const dateObj = full.date ? new Date(full.date) : new Date();
-      const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-      const rightText = dateStr;
+      const dateStr = dateObj.toLocaleDateString('fr-FR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      }).toUpperCase();
 
       const PAD = 4;
       doc.setFontSize(8.5);
@@ -373,41 +381,25 @@ async generatePDF(f: Facture): Promise<void> {
 
       const LEFT_W = PAD + labelW + 4 + numeroW + PAD;
 
-      let RIGHT_W = 0;
-      if (rightText) {
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'normal');
-        RIGHT_W = Math.max(60, PAD + doc.getTextWidth(rightText) + PAD);
-      }
-
-      const BW = LEFT_W + RIGHT_W;
-
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
-      doc.rect(ML, BY, BW, BH);
-
-      if (rightText) {
-        doc.line(ML + LEFT_W, BY, ML + LEFT_W, BY + BH);
-      }
+      doc.rect(ML, BY, LEFT_W, BH);
 
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      doc.text('FACTURE N°', ML + 6, BY + BH - 2.5);
+      doc.text('FACTURE N°', ML + PAD, BY + BH - 2.5);
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
       doc.text(full.numero || 'F-XXXX', ML + PAD + labelW + 4, BY + BH - 2.5);
 
-      if (rightText) {
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...NOIR);
-        doc.text(rightText, ML + LEFT_W + PAD, BY + BH - 2.5);
-      }
-
-    
+      // Date alignée à droite de la page
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
+      doc.text(dateStr, W - MR, BY + BH - 2.5, { align: 'right' });
 
       // 5. TABLEAU PRODUITS
       let lignes: any[] = [];
@@ -419,6 +411,7 @@ async generatePDF(f: Facture): Promise<void> {
         );
       }
 
+      const MIN_ROWS = 10;
       const bodyRows: any[] = [];
       lignes.forEach((l: any) => {
         const prix = Number(l.prix ?? 0);
@@ -426,7 +419,6 @@ async generatePDF(f: Facture): Promise<void> {
         const total = Number(l.total ?? qte * prix);
         const tva = Number(l.tva ?? l.produit?.tva ?? 0);
         const unite = l.produit?.unite || 'boule';
-
         bodyRows.push([
           (l.produit?.reference || '').toUpperCase(),
           (l.produit?.nom || '').toUpperCase(),
@@ -438,16 +430,21 @@ async generatePDF(f: Facture): Promise<void> {
         ]);
       });
 
+      while (bodyRows.length < MIN_ROWS) {
+        bodyRows.push(['', '', '', '', '', '', '']);
+      }
+
       autoTable(doc, {
         startY: BY + BH + 3,
         head: [['RÉF', 'DÉSIGNATION', 'TVA', 'QTE', 'UNITÉ', 'PRIX U HT', 'TOTAL HT']],
         body: bodyRows,
         theme: 'plain',
         styles: {
-          textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, minCellHeight: 10, fillColor: WHITE,
+          textColor: NOIR, lineColor: NOIR, lineWidth: 0, minCellHeight: 10, fillColor: WHITE,
         },
         headStyles: {
-          fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7.5, lineColor: BORDER, lineWidth: 0.3,
+          fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7.5,
+          lineColor: NOIR, lineWidth: 0.3,
         },
         alternateRowStyles: { fillColor: WHITE },
         columnStyles: {
@@ -459,11 +456,33 @@ async generatePDF(f: Facture): Promise<void> {
           5: { cellWidth: 32, halign: 'right' as const },
           6: { cellWidth: 32, halign: 'right' as const },
         },
+        tableWidth: 'auto',
+        didDrawCell: (data) => {
+          const { doc: d, cell, column, table } = data;
+          const lastCol = table.columns.length - 1;
+          d.setDrawColor(15, 23, 42);
+          d.setLineWidth(0.3);
+          // Bordures verticales
+          d.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+          if (column.index === lastCol) {
+            d.line(cell.x + cell.width, cell.y, cell.x + cell.width, cell.y + cell.height);
+          }
+          // Ligne de séparation sous le header
+          if (data.row.section === 'head') {
+            d.line(cell.x, cell.y + cell.height, cell.x + cell.width, cell.y + cell.height);
+          }
+        },
       });
 
-      // 6. BLOC TOTAUX
+      // Fermer le tableau en bas
       const tableEndY: number = (doc as any).lastAutoTable?.finalY ?? 200;
+      const tableStartX = ML;
+      const tableEndX = ML + 24 + 52 + 15 + 18 + 22 + 32 + 32;
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(0.3);
+      doc.line(tableStartX, tableEndY, tableEndX, tableEndY);
 
+      // 6. BLOC TOTAUX (contenu facture : HT, TVA, TTC, payé, reste)
       const totalHT = Number(full.totalHT ?? 0);
       const totalTVA = Number(full.totalTVA ?? 0);
       const totalTTC = Number(full.total ?? 0);
@@ -472,9 +491,9 @@ async generatePDF(f: Facture): Promise<void> {
 
       const totRows = [
         { label: 'TOTAL HT', value: `${totalHT.toFixed(2)} DH`, bold: true },
-        { label: 'TVA', value: `${totalTVA.toFixed(2)} DH` },
+        { label: 'TVA', value: `${totalTVA.toFixed(2)} DH`, bold: false },
         { label: 'TOTAL TTC', value: `${totalTTC.toFixed(2)} DH`, bold: true },
-        { label: 'MONTANT PAYÉ', value: `${paye.toFixed(2)} DH` },
+        { label: 'MONTANT PAYÉ', value: `${paye.toFixed(2)} DH`, bold: false },
         { label: 'RESTE À PAYER', value: `${reste.toFixed(2)} DH`, bold: true, red: reste > 0 },
       ];
 
@@ -489,7 +508,10 @@ async generatePDF(f: Facture): Promise<void> {
 
       totRows.forEach(({ label, value, bold, red }, i) => {
         const rowY = BOX_Y + i * ROW_H;
-        if (i > 0) { doc.setDrawColor(...BORDER); doc.line(BOX_X, rowY, BOX_X + BOX_W, rowY); }
+        if (i > 0) {
+          doc.setDrawColor(...BORDER);
+          doc.line(BOX_X, rowY, BOX_X + BOX_W, rowY);
+        }
         if (label === 'TOTAL TTC' || label === 'RESTE À PAYER') {
           doc.setFillColor(...LIGHT);
           doc.rect(BOX_X, rowY, BOX_W, ROW_H, 'F');
@@ -503,19 +525,17 @@ async generatePDF(f: Facture): Promise<void> {
         doc.text(value, BOX_X + BOX_W - 3, textY, { align: 'right' });
       });
 
-
-      // 7. HISTORIQUE DES PAIEMENTS à côté du bloc totaux
+      // 7. HISTORIQUE DES PAIEMENTS
       const paiements: any[] = full.paiements || [];
       if (paiements.length > 0) {
-        const payTableY = tableEndY + 10;
+        const payTableY = tableEndY + 3;
 
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...NOIR);
-        doc.text('HISTORIQUE DES PAIEMENTS', ML, payTableY);
+        // doc.setFontSize(8);
+        // doc.setFont('helvetica', 'bold');
+        // doc.setTextColor(...NOIR);
+        // doc.text('HISTORIQUE DES PAIEMENTS', ML, payTableY);
 
-        const tableStartY = payTableY + 5;
-        const bodyRows = paiements.map((p: any) => {
+        const histBodyRows = paiements.map((p: any) => {
           const pDate = p.date ? new Date(p.date) : new Date();
           const methodeLabel = this.getMethodeLabel(p.methode || 'ESPECE');
           return [
@@ -526,33 +546,69 @@ async generatePDF(f: Facture): Promise<void> {
         });
         const totalPaye = Number(full.paye ?? 0);
 
-        autoTable(doc, {
-          startY: tableStartY,
-          margin: { left: ML },
-          head: [['DATE', 'LIBELLÉ', 'MONTANT']],
-          body: bodyRows,
-          foot: [['', 'TOTAL PAYÉ', `${totalPaye.toFixed(2)} DH`]],
-          theme: 'plain',
-          styles: { textColor: NOIR, lineColor: BORDER, lineWidth: 0.2, fontSize: 7 },
-          headStyles: { fillColor: LIGHT, textColor: NOIR, fontStyle: 'bold', fontSize: 7, lineColor: BORDER, lineWidth: 0.3 },
-          footStyles: { fillColor: LIGHT, textColor: NOIR, fontStyle: 'bold', fontSize: 7, lineColor: BORDER, lineWidth: 0.3 },
-          columnStyles: {
-            0: { cellWidth: 20, halign: 'left' as const },
-            1: { cellWidth: 35, halign: 'left' as const },
-            2: { cellWidth: 25, halign: 'right' as const },
-          },
-        });
+      autoTable(doc, {
+  startY: payTableY + 5,
+  margin: { left: ML },
+  head: [['Date', 'Libellé', 'Montant']],
+  body: histBodyRows,
+  foot: [['', 'TOTAL PAYÉ', `${totalPaye.toFixed(2)} DH`]],
+  theme: 'plain',
+  styles: {
+    textColor: NOIR, lineColor: NOIR, lineWidth: 0, fontSize: 7, minCellHeight: 7,
+    cellPadding: { top: 1, right: 3, bottom: 1, left: 3 },
+  },
+  headStyles: {
+    fillColor: WHITE, textColor: NOIR, fontStyle: 'bold', fontSize: 7,
+    cellPadding: { top: 1, right: 3, bottom: 1, left: 3 },
+  },
+  footStyles: {
+    fillColor: LIGHT, textColor: NOIR, fontStyle: 'bold', fontSize: 7,
+    lineColor: NOIR, lineWidth: 0,
+    cellPadding: { top: 1, right: 3, bottom: 1, left: 3 },
+  },
+  columnStyles: {
+    0: { cellWidth: 20, halign: 'left' as const },
+    1: { cellWidth: 35, halign: 'left' as const },
+    2: { cellWidth: 25, halign: 'left' as const , cellPadding: {top: 2, bottom:2, left:2, right:3}},
+  },
+  didDrawCell: (data) => {
+    const { doc: d, cell, column, table } = data;
+    const lastCol = table.columns.length - 1;
+
+    d.setDrawColor(15, 23, 42);
+    d.setLineWidth(0.3);
+
+    if (column.index === 0) {
+      d.line(cell.x, cell.y, cell.x, cell.y + cell.height);
+    }
+    if (column.index === lastCol) {
+      d.line(cell.x + cell.width, cell.y, cell.x + cell.width, cell.y + cell.height);
+    }
+    if (data.row.section === 'head' && data.row.index === 0) {
+      d.line(cell.x, cell.y, cell.x + cell.width, cell.y);
+    }
+    if (data.row.section === 'foot') {
+      d.line(cell.x, cell.y + cell.height, cell.x + cell.width, cell.y + cell.height);
+    }
+  },
+});
+
+        // Fermer le tableau historique en bas
+        const histEndY: number = (doc as any).lastAutoTable?.finalY ?? 200;
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.3);
+        doc.line(ML, histEndY, ML + 20 + 35 + 25, histEndY);
       }
 
       // 8. FOOTER
-      const FY = H - 16;
+      const FY = H - 13;
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.3);
       doc.line(ML, FY, W - MR, FY);
 
-      doc.setFontSize(6.2);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...GRIS);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NOIR);
       doc.text('PRODMEAT - Bd mly Ismail res mly Ismail N°22 etg 5 - N 19 - TANGER', W / 2, FY + 4, { align: 'center' });
       doc.text('ICE : 003291478000039   R.C: 1328011   CNSS 4810442   Patente: 57225884   IF: 53783148', W / 2, FY + 8, { align: 'center' });
       doc.text('Attijariwafa Bank   007 640 00 14335000003128 43', W / 2, FY + 12, { align: 'center' });
