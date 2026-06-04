@@ -318,10 +318,10 @@ export class AvoirsComponent implements OnInit {
         const client = full.facture?.client || {};
 
         // 1. LOGO BÔDÉLICE
-        const LOGO_X = ML;
-        const LOGO_Y = 8;
-        const LOGO_W = 40;
-        const LOGO_H = 40;
+      const LOGO_X = 0;
+const LOGO_Y = -20;
+const LOGO_W = 90;
+const LOGO_H = 90;
 
         try {
           const logoImg = new Image();
@@ -348,97 +348,129 @@ export class AvoirsComponent implements OnInit {
         }
 
         // 2. INFOS PRODMEAT
-        const INFO_Y = LOGO_Y + LOGO_H + 5;
+        const INFO_X = ML;
+const INFO_Y = LOGO_Y + LOGO_H - 10;
 
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...NOIR);
-        doc.text('PRODMEAT', ML, INFO_Y);
+        doc.text('PRODMEAT', INFO_X, INFO_Y);
 
-        const prodmeatLines = [
-          'BD MLY ISMAIL RES MLY ISMAIL N°22 ETG 5',
-          'N 19 - TANGER',
-          'TÉL : 06 66 57 03 03',
-          'MAIL : SECRETARIATPRODMEAT@GMAIL.COM',
-          'N° ONSSA: MAPAV.34.21.24',
-        ];
+       const prodmeatLines = [
+  'Bd mly Ismail res mly Ismail N°22 etg 5',
+  'N 19 - TANGER',
+  'TÉL : 06 66 57 03 03',
+  'MAIL : secretariatprodmeat@gmail.com',
+  'N° ONSSA: MAPAV.34.21.24',
+];
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...NOIR);
-        doc.setFontSize(8);
-        prodmeatLines.forEach((line, i) => doc.text(line, ML, INFO_Y + 4 + i * 4));
+        doc.setFontSize(11);
+        prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 5 + i * 6));
 
-        // 3. BLOC CLIENT
-        const CX = 105;
-        const CY = LOGO_Y;
-        const CW = W - CX - MR;
+     // 3. BLOC CLIENT
+const CX = 110;
+const CY = INFO_Y - 20; // ← INFO_Y pas LOGO_Y
+const CW = W - CX - MR;
 
-        // Calculate dynamic client block height
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        let addressLines: string[] = [];
-        if (client.adresse) {
-          addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
-        }
-        
-        let textHeight = 12; // name offset
-        textHeight += 7; // address start offset
-        if (addressLines.length > 0) {
-          textHeight += (addressLines.length - 1) * 4.5;
-        }
-        textHeight += 7; // cpVille offset
-        if (client.ice) textHeight += 4;
-        if (client.reference) textHeight += 4;
-        const CH = Math.max(44, textHeight + 4);
+// ── Nom ──
+doc.setFont('helvetica', 'bold');
+doc.setFontSize(10);
+const nomRaw = (client.nom || '—').toUpperCase();
+let nomLines = doc.splitTextToSize(nomRaw, CW - 8);
+let nomFontSize = 10;
+let nomLineHeight = 6;
+if (nomLines.length > 1) {
+  doc.setFontSize(9);
+  nomLines = doc.splitTextToSize(nomRaw, CW - 8);
+  nomFontSize = 9;
+  nomLineHeight = 5;
+}
 
-        doc.setFillColor(...LIGHT);
-        doc.setDrawColor(...BORDER);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
+// ── Adresse ──
+let addressLines: string[] = [];
+if (client.adresse) {
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 8);
+}
 
-        let currentY = CY + 12;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...NOIR);
-        doc.text((client.nom || '—').toUpperCase(), CX + 3, currentY);
+// ── Hauteur cadre ──
+let textHeight = 0;
+textHeight += nomLines.length * nomLineHeight;
+textHeight += 2;
+textHeight += addressLines.length * 6;
+textHeight += 7; // cpVille
+if (client.ice) textHeight += 5;
+if (client.reference) textHeight += 5;
+const CH = Math.max(44, textHeight + 16);
 
-        currentY += 7;
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...NOIR);
-        if (addressLines.length > 0) {
-          addressLines.forEach((line: string) => {
-            doc.text(line, CX + 3, currentY);
-            currentY += 4.5;
-          });
-        }
+// ── Dessin cadre style facture ──
+doc.setFillColor(...WHITE);
+doc.setDrawColor(...NOIR);
+doc.setLineWidth(0.3);
+doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
 
-        const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
-        if (cpVille) {
-          doc.setFont('helvetica', 'normal');
-          doc.text(cpVille, CX + 3, currentY);
-          currentY += 6.5;
-        } else {
-          currentY += 2;
-        }
+let currentY = CY + 12;
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.setTextColor(...NOIR);
-        if (client.ice) {
-          doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
-          currentY += 4;
-        }
-        if (client.reference) {
-          doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
-        }
+// Nom
+doc.setFont('helvetica', 'bold');
+doc.setFontSize(nomFontSize);
+doc.setTextColor(...NOIR);
+nomLines.forEach((line: string) => {
+  doc.text(line, CX + 3, currentY);
+  currentY += nomLineHeight;
+});
+currentY += 2;
 
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...GRIS_L);
-        doc.text('1/1', W - MR, CY + 5, { align: 'right' });
+// Adresse
+doc.setFont('helvetica', 'normal');
+doc.setFontSize(9);
+doc.setTextColor(...NOIR);
+if (addressLines.length > 0) {
+  addressLines.forEach((line: string) => {
+    doc.text(line, CX + 3, currentY);
+    currentY += 6;
+  });
+}
+
+// Code postal + ville
+const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
+if (cpVille) {
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...NOIR);
+  doc.text(cpVille, CX + 3, currentY);
+  currentY += 7;
+} else {
+  currentY += 7;
+}
+
+// ICE
+if (client.ice) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...NOIR);
+  doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
+  currentY += 5;
+}
+
+// Référence client
+if (client.reference) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...NOIR);
+  doc.text(`RÉF: ${client.reference}`.toUpperCase(), CX + 3, currentY);
+}
+
+// Numéro de page
+doc.setFontSize(7.5);
+doc.setFont('helvetica', 'normal');
+doc.setTextColor(...GRIS_L);
+doc.text('1/1', W - MR, CY + 5, { align: 'right' });
 
 // 4. BANDEAU "FACTURE D'AVOIR N°" + Facture liée + date
-        const BY = CY + CH + 25;
+        const BY = CY + CH + 8;
         const BH = 9;
 
         const dateObj = full.date ? new Date(full.date) : new Date();
