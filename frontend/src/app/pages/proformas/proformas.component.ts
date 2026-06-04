@@ -268,83 +268,105 @@ async generatePDF(p: FactureProforma): Promise<void> {
     doc.setFontSize(11);
     prodmeatLines.forEach((line, i) => doc.text(line, INFO_X, INFO_Y + 5 + i * 6));
 
-    // 3. BLOC CLIENT
-    const CX = 110;
-    const CY = INFO_Y - 20;
-    const CW = W - CX - MR;
+// 3. BLOC CLIENT
+const CX = 110;
+const CY = INFO_Y - 20;
+const CW = W - CX - MR;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    let addressLines: string[] = [];
-    if (client.adresse) {
-      addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
-    }
+// ── Nom : mesure avec la bonne font avant splitTextToSize ──
+doc.setFont('helvetica', 'bold');
+doc.setFontSize(10);
+const nomRaw = (client.nom || '—').toUpperCase();
+let nomLines = doc.splitTextToSize(nomRaw, CW - 8);
+let nomFontSize = 10;
+let nomLineHeight = 6;
+if (nomLines.length > 1) {
+  doc.setFontSize(9);
+  nomLines = doc.splitTextToSize(nomRaw, CW - 8);
+  nomFontSize = 9;
+  nomLineHeight = 5;
+}
 
-    let textHeight = 12;
-    textHeight += 7;
-    if (addressLines.length > 0) {
-      textHeight += (addressLines.length - 1) * 4.5;
-    }
-    textHeight += 7;
-    if (client.ice) textHeight += 4;
-    const CH = Math.max(44, textHeight + 4);
+// ── Adresse : mesure avec la bonne font avant splitTextToSize ──
+let addressLines: string[] = [];
+if (client.adresse) {
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 8);
+}
 
-    doc.setFillColor(...WHITE);
-    doc.setDrawColor(...NOIR);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
+// ── Calcul hauteur cadre ──
+let textHeight = 0;
+textHeight += nomLines.length * nomLineHeight;
+textHeight += 2;
+textHeight += addressLines.length * 6;
+textHeight += 7; // cpVille
+if (client.ice) textHeight += 5;
+if (client.reference) textHeight += 5;
+const CH = Math.max(44, textHeight + 16);
 
-    let currentY = CY + 12;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...NOIR);
-   const nomLines = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6);
+// ── Dessin du cadre ──
+doc.setFillColor(...WHITE);
+doc.setDrawColor(...NOIR);
+doc.setLineWidth(0.3);
+doc.roundedRect(CX, CY, CW, CH, 2, 2, 'FD');
+
+let currentY = CY + 12;
+
+// Nom
+doc.setFont('helvetica', 'bold');
+doc.setFontSize(nomFontSize);
+doc.setTextColor(...NOIR);
 nomLines.forEach((line: string) => {
   doc.text(line, CX + 3, currentY);
-  currentY += 6;
+  currentY += nomLineHeight;
 });
+currentY += 2;
 
-    currentY += 2;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...NOIR);
-    if (addressLines.length > 0) {
-      addressLines.forEach((line: string) => {
-        doc.text(line, CX + 3, currentY);
-        currentY += 7;
-      });
-    }
+// Adresse
+doc.setFont('helvetica', 'normal');
+doc.setFontSize(9);
+doc.setTextColor(...NOIR);
+if (addressLines.length > 0) {
+  addressLines.forEach((line: string) => {
+    doc.text(line, CX + 3, currentY);
+    currentY += 6;
+  });
+}
 
-    const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
-    if (cpVille) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(cpVille, CX + 3, currentY);
-      currentY += 7;
-    } else {
-      currentY += 7;
-    }
+// Code postal + ville
+const cpVille = [client.codepostal, client.ville].filter(Boolean).join('     ').toUpperCase();
+if (cpVille) {
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text(cpVille, CX + 3, currentY);
+  currentY += 7;
+} else {
+  currentY += 7;
+}
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...NOIR);
-    if (client.ice) {
-      doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
-      currentY += 5;
-    }
+// ICE
+if (client.ice) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...NOIR);
+  doc.text(`ICE: ${client.ice}`.toUpperCase(), CX + 3, currentY);
+  currentY += 5;
+}
 
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...GRIS_L);
-    doc.text('1/1', W - MR, CY + 5, { align: 'right' });
+// Numéro de page
+doc.setFontSize(7.5);
+doc.setFont('helvetica', 'normal');
+doc.setTextColor(...GRIS_L);
+doc.text('1/1', W - MR, CY + 5, { align: 'right' });
 
-    // Numéro client en bas du bloc client
-    if (client.reference) {
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...NOIR);
-      doc.text(`N° CLIENT: ${client.reference}`.toUpperCase(), CX + 3, CY + CH + 5);
-    }
+// N° client (sous le cadre)
+if (client.reference) {
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...NOIR);
+  doc.text(`N° CLIENT: ${client.reference}`.toUpperCase(), CX + 3, CY + CH + 5);
+}
 
     // 4. BANDEAU "FACTURE PROFORMA N°" + date à droite
     const BY = CY + CH + 8;
