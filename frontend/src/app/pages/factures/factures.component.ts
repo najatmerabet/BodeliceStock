@@ -291,20 +291,34 @@ async generatePDF(f: Facture): Promise<void> {
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
+      const nomRaw = (client.nom || '—').toUpperCase();
+      doc.setFontSize(10);
+let nomLines = doc.splitTextToSize(nomRaw, CW - 6);
+let nomFontSize = 10;
+let nomLineHeight = 6;
+if (nomLines.length > 1) {
+  // Réessayer en 9pt
+  doc.setFontSize(9);
+  nomLines = doc.splitTextToSize(nomRaw, CW - 6);
+  nomFontSize = 9;
+  nomLineHeight = 5;
+}
       let addressLines: string[] = [];
       if (client.adresse) {
-        addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 6);
+         doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+        addressLines = doc.splitTextToSize(client.adresse.toUpperCase(), CW - 8);
       }
+    
 
-      let textHeight = 12;
+let textHeight = 0;
+      textHeight += nomLines.length * nomLineHeight;
+      textHeight += 2;                          // currentY += 2 après nom
+      textHeight += addressLines.length * 6;
       textHeight += 7;
-      if (addressLines.length > 0) {
-        textHeight += (addressLines.length - 1) * 4.5;
-      }
-      textHeight += 7;
-      if (client.ice) textHeight += 4;
-      if (client.reference) textHeight += 4;
-      const CH = Math.max(44, textHeight + 4);
+      if (client.ice) textHeight += 5;
+      if (client.reference) textHeight += 5;
+      const CH = Math.max(44, textHeight + 16);
 
       doc.setFillColor(...WHITE);
       doc.setDrawColor(...NOIR);
@@ -314,19 +328,22 @@ async generatePDF(f: Facture): Promise<void> {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...NOIR);
-      const nomLines = doc.splitTextToSize((client.nom || '—').toUpperCase(), CW - 6);
-nomLines.forEach((line: string) => {
+     
+doc.setFontSize(nomFontSize);
+
+
+      nomLines.forEach((line: string) => {
   doc.text(line, CX + 3, currentY);
-  currentY += 6;
+  currentY += nomLineHeight;
 });
       currentY += 2;
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...NOIR);
       if (addressLines.length > 0) {
         addressLines.forEach((line: string) => {
           doc.text(line, CX + 3, currentY);
-          currentY += 7;
+          currentY += 6;
         });
       }
 
@@ -348,9 +365,7 @@ nomLines.forEach((line: string) => {
         currentY += 5;
       }
 
-      // if (client.reference) {
-      //   doc.text(`N° Client: ${client.reference}`.toUpperCase(), CX + 3, currentY);
-      // }
+     
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
