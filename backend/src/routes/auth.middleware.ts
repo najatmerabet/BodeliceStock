@@ -9,9 +9,10 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   }
 
   const token = authHeader.split(' ')[1];
+  const JWT_SECRET = process.env.JWT_SECRET || 'prodmeatstocksecret2024';
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
     console.log("Decoded Token:", decoded);
     const userId = decoded.userId ?? decoded.id;
 
