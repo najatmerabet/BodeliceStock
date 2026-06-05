@@ -59,6 +59,7 @@ model Client {
   porteurId       Int?             @map("porteur_id")
   commissionRate  Decimal?         @map("commission_rate") @db.Decimal(5, 2)
   porteur         PorteurAffaire?  @relation(fields: [porteurId], references: [id], onDelete: SetNull)
+  categoryCommissions ClientCategoryCommission[]
 
   @@map("clients")
 }
@@ -285,3 +286,15 @@ model PorteurAffaire {
 
   @@map("porteurs_affaire")
 }
+
+model ClientCategoryCommission {
+  id         Int      @id @default(autoincrement())
+  clientId   Int      @map("client_id")
+  categorie  String
+  commission Decimal  @db.Decimal(10, 2) @default(0) // Commission fixe en DH/kg
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, categorie])
+  @@map("client_category_commissions")
+}
+

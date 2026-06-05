@@ -20,6 +20,77 @@ router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextF
   }
 });
 
+// GET /api/porteurs-affaire/categories - List all unique product categories
+router.get('/categories', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const raw = await prisma.produit.findMany({
+      select: { categorie: true },
+      distinct: ['categorie'],
+    });
+    const categories = raw.map(p => p.categorie).filter(Boolean) as string[];
+    
+    // Check if any product has no category
+    const hasNoCategory = await prisma.produit.findFirst({
+      where: {
+        OR: [
+          { categorie: null },
+          { categorie: '' }
+        ]
+      }
+    });
+    if (hasNoCategory) {
+      categories.push('Sans Catégorie');
+    }
+    
+    res.json(categories);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/porteurs-affaire/clients/:clientId/commissions - Get commissions for a client
+router.get('/clients/:clientId/commissions', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientId = parseInt(String(req.params.clientId));
+    const commissions = await prisma.clientCategoryCommission.findMany({
+      where: { clientId },
+    });
+    res.json(commissions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/porteurs-affaire/clients/:clientId/commissions - Save commissions in bulk
+router.put('/clients/:clientId/commissions', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientId = parseInt(String(req.params.clientId));
+    const commissionsData = req.body; // Array of { categorie: string, commission: number }
+
+    if (!Array.isArray(commissionsData)) {
+      res.status(400).json({ error: "Format invalide, un tableau est attendu" });
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.clientCategoryCommission.deleteMany({
+        where: { clientId }
+      }),
+      prisma.clientCategoryCommission.createMany({
+        data: commissionsData.map(c => ({
+          clientId,
+          categorie: c.categorie,
+          commission: parseFloat(String(c.commission || 0))
+        }))
+      })
+    ]);
+
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/porteurs-affaire/:id - Single porteur
 router.get('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -185,6 +256,20 @@ router.get('/:id/rapport', authMiddleware, async (req: Request, res: Response, n
       }
     });
 
+    // Fetch all category-specific commissions for these clients
+    const categoryCommissions = await prisma.clientCategoryCommission.findMany({
+      where: {
+        clientId: { in: clientIds }
+      }
+    });
+
+    // Create a lookup map: "clientId_category" -> commissionAmount
+    const commissionMap = new Map<string, number>();
+    categoryCommissions.forEach(cc => {
+      const key = `${cc.clientId}_${cc.categorie.toLowerCase().trim()}`;
+      commissionMap.set(key, Number(cc.commission));
+    });
+
     const lines: any[] = [];
     let totalRestaurant = 0;
     let totalPorteur = 0;
@@ -192,15 +277,18 @@ router.get('/:id/rapport', authMiddleware, async (req: Request, res: Response, n
 
     for (const bl of bls) {
       for (const l of bl.lignes) {
-        const commissionRate = Number(bl.client.commissionRate || 0);
+        const productCategory = (l.produit.categorie || 'Sans Catégorie').toLowerCase().trim();
+        const key = `${bl.client.id}_${productCategory}`;
+        const commissionAmount = commissionMap.get(key) || 0;
+
         const prixRestaurant = Number(l.prix);
         const poids = Number(l.quantite); // quantite field in DB represents total weight
         const nbUnites = Number(l.nbUnites || 0);
         const montant = Number(l.total || poids * prixRestaurant);
         
-        const prixPorteur = prixRestaurant - commissionRate;
+        const prixPorteur = prixRestaurant - commissionAmount;
         const totalLinePorteur = poids * prixPorteur;
-        const avoir = poids * commissionRate;
+        const avoir = poids * commissionAmount;
 
         totalRestaurant += montant;
         totalPorteur += totalLinePorteur;

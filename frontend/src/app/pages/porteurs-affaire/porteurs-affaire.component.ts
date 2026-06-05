@@ -30,6 +30,13 @@ export class PorteursAffaireComponent implements OnInit {
   clientToLink: string = '';
   commissionRateToLink: number = 0;
 
+  // Category Commissions Modal State
+  showCommissionsModal = false;
+  editingClient: Client | null = null;
+  categories: string[] = [];
+  clientCommissions: { categorie: string; commission: number }[] = [];
+  savingCommissions = false;
+
   // Rapport State
   rapportPorteurId: string = '';
   rapportMois: string = '';
@@ -67,6 +74,7 @@ export class PorteursAffaireComponent implements OnInit {
 
     this.loadPorteurs();
     this.loadClients();
+    this.loadCategories();
   }
 
   loadPorteurs(): void {
@@ -252,6 +260,77 @@ export class PorteursAffaireComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.showToast('Erreur lors de la dissociation', 'err');
+      }
+    });
+  }
+
+  loadCategories(): void {
+    this.porteurService.getCategories().subscribe({
+      next: (data) => {
+        this.categories = data;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Erreur chargement categories:', err)
+    });
+  }
+
+  openCommissions(client: Client): void {
+    this.editingClient = client;
+    this.clientCommissions = [];
+    this.showCommissionsModal = true;
+    this.cdr.detectChanges();
+
+    this.porteurService.getClientCommissions(client.id!).subscribe({
+      next: (data) => {
+        const loadedMap = new Map<string, number>();
+        data.forEach(c => {
+          loadedMap.set(c.categorie.toLowerCase().trim(), Number(c.commission));
+        });
+
+        this.clientCommissions = this.categories.map(cat => {
+          const normCat = cat.toLowerCase().trim();
+          return {
+            categorie: cat,
+            commission: loadedMap.has(normCat) ? loadedMap.get(normCat)! : 0
+          };
+        });
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.showToast('Erreur lors du chargement des commissions', 'err');
+      }
+    });
+  }
+
+  closeCommissionsModal(): void {
+    this.showCommissionsModal = false;
+    this.editingClient = null;
+    this.clientCommissions = [];
+  }
+
+  saveCommissions(): void {
+    if (!this.editingClient) return;
+
+    this.savingCommissions = true;
+    const clientId = this.editingClient.id!;
+    const payload = this.clientCommissions.map(c => ({
+      categorie: c.categorie,
+      commission: Number(c.commission || 0)
+    }));
+
+    this.porteurService.saveClientCommissions(clientId, payload).subscribe({
+      next: () => {
+        this.showToast('Commissions enregistrées', 'ok');
+        this.closeCommissionsModal();
+        this.savingCommissions = false;
+        this.loadPorteurs();
+        this.loadRapport();
+      },
+      error: (err) => {
+        console.error(err);
+        this.showToast('Erreur lors de l\'enregistrement', 'err');
+        this.savingCommissions = false;
       }
     });
   }

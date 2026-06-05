@@ -72,4 +72,16 @@ export class PorteurService {
     }
     return this.http.get<RapportCommissions>(`${this.apiurl}/${id}/rapport`, { params });
   }
+
+  getCategories(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiurl}/categories`);
+  }
+
+  getClientCommissions(clientId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiurl}/clients/${clientId}/commissions`);
+  }
+
+  saveClientCommissions(clientId: number, commissions: any[]): Observable<any> {
+    return this.http.put<any>(`${this.apiurl}/clients/${clientId}/commissions`, commissions);
+  }
 }
