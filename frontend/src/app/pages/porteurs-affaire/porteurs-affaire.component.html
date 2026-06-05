@@ -394,13 +394,15 @@
 <!-- Modal : Commissions par Catégorie                       -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div *ngIf="showCommissionsModal" class="overlay" (click)="closeCommissionsModal()">
-  <div class="modal-box" style="max-width: 600px;" (click)="$event.stopPropagation()">
+  <div class="modal-box modal-commissions" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div class="hdr-left">
-        <span class="material-symbols-rounded box-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">payments</span>
+        <div class="hdr-icon-wrap emerald">
+          <span class="material-symbols-rounded">payments</span>
+        </div>
         <div>
           <h3>Commissions par Catégorie</h3>
-          <p class="subtitle" style="margin-top: 2px;">Client : <strong style="color: var(--txt-primary);">{{ editingClient?.nom }}</strong></p>
+          <p class="subtitle">Client : <strong class="highlight-name">{{ editingClient?.nom }}</strong></p>
         </div>
       </div>
       <button class="modal-close" (click)="closeCommissionsModal()">
@@ -408,23 +410,30 @@
       </button>
     </div>
 
-    <div class="modal-body" style="max-height: 55vh; overflow-y: auto; padding-top: 10px;">
-      <div *ngIf="categories.length === 0" class="empty-cell" style="padding: 20px;">
+    <div class="modal-body commissions-body">
+      <div *ngIf="categories.length === 0" class="empty-cell">
         <span class="material-symbols-rounded empty-icon">inventory_2</span>
         <p>Aucune catégorie de produit enregistrée dans le système.</p>
       </div>
 
-      <div *ngIf="categories.length > 0" class="commissions-list" style="display: flex; flex-direction: column; gap: 14px;">
-        <div *ngFor="let item of clientCommissions" class="commission-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
-          <div style="font-weight: 500; color: var(--txt-primary);">
-            {{ item.categorie }}
-          </div>
-          <div class="fld" style="margin-bottom: 0; width: 140px;">
-            <div class="input-icon" style="height: 38px; position: relative;">
-              <span class="material-symbols-rounded" style="font-size: 18px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7;">attach_money</span>
-              <input type="number" [(ngModel)]="item.commission" min="0" step="0.1" placeholder="0.00" style="padding: 0 10px 0 32px; font-size: 0.9rem; width: 100%; height: 100%; border-radius: 6px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--txt-primary);">
-              <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; opacity: 0.6; pointer-events: none;">DH/kg</span>
+      <div *ngIf="categories.length > 0" class="commissions-grid">
+        <div *ngFor="let item of clientCommissions; let i = index" 
+             class="commission-row" 
+             [class.has-value]="item.commission > 0">
+          <div class="cat-info">
+            <div class="cat-avatar">
+              <span class="material-symbols-rounded">inventory_2</span>
             </div>
+            <span class="cat-name">{{ item.categorie }}</span>
+          </div>
+          <div class="commission-input-group">
+            <input type="number" 
+                   [(ngModel)]="item.commission" 
+                   min="0" 
+                   step="0.1" 
+                   placeholder="0.00"
+                   class="commission-input">
+            <span class="input-suffix">DH/kg</span>
           </div>
         </div>
       </div>
@@ -432,7 +441,7 @@
 
     <div class="modal-footer">
       <button class="btn-sec" (click)="closeCommissionsModal()">Annuler</button>
-      <button class="btn-primary" (click)="saveCommissions()" [disabled]="savingCommissions">
+      <button class="btn-primary btn-save" (click)="saveCommissions()" [disabled]="savingCommissions">
         <span class="material-symbols-rounded">save</span>
         {{ savingCommissions ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
