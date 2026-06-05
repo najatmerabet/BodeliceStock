@@ -1,0 +1,422 @@
+<div class="porteur-page">
+  <!-- Toast notification -->
+  <div *ngIf="toast" class="toast" [class.toast-ok]="toastType === 'ok'" [class.toast-err]="toastType === 'err'">
+    <span class="material-symbols-rounded">{{ toastType === 'ok' ? 'check_circle' : 'error' }}</span>
+    {{ toast }}
+  </div>
+
+  <!-- En-tête -->
+  <div class="page-hdr">
+    <div class="page-hdr-left">
+      <div class="page-icon purple">
+        <span class="material-symbols-rounded">handshake</span>
+      </div>
+      <div>
+        <h1>Porteurs d'Affaires</h1>
+        <p>Gérez les apporteurs d'affaires, leurs clients et suivez leurs commissions.</p>
+      </div>
+    </div>
+    <div class="page-hdr-right" *ngIf="activeTab === 'porteurs'">
+      <button class="btn-add" (click)="openAddPorteur()">
+        <span class="material-symbols-rounded">add</span>
+        Nouveau Porteur
+      </button>
+    </div>
+  </div>
+
+  <!-- Navigation par Onglets -->
+  <div class="tab-nav">
+    <button class="tab-btn" [class.active]="activeTab === 'porteurs'" (click)="activeTab = 'porteurs'">
+      <span class="material-symbols-rounded">people</span>
+      Porteurs & Clients
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'rapport'" (click)="activeTab = 'rapport'; loadRapport()">
+      <span class="material-symbols-rounded">analytics</span>
+      Rapport & Commissions
+    </button>
+  </div>
+
+  <!-- ==================== ONGLET PORTEURS & CLIENTS ==================== -->
+  <div class="tab-content" *ngIf="activeTab === 'porteurs'">
+    <div class="porteurs-grid">
+      <!-- Liste des Porteurs (Gauche) -->
+      <div class="tbl-card porteurs-list-card">
+        <div class="card-header">
+          <h3>Liste des Porteurs</h3>
+          <span class="count-badge">{{ porteurs.length }} porteur(s)</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="porteurs-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Téléphone</th>
+                <th>Email</th>
+                <th class="tc">Clients</th>
+                <th class="tr">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of porteurs" 
+                  [class.selected-row]="selectedPorteur?.id === p.id"
+                  (click)="selectPorteur(p)"
+                  class="clickable-row">
+                <td>
+                  <div class="porteur-cell">
+                    <div class="p-av">{{ p.nom.charAt(0).toUpperCase() }}</div>
+                    <span class="p-nom">{{ p.nom }}</span>
+                  </div>
+                </td>
+                <td class="mono-sm">{{ p.telephone || '-' }}</td>
+                <td>{{ p.email || '-' }}</td>
+                <td class="tc">
+                  <span class="count-badge count-clients">{{ p.clients?.length || 0 }}</span>
+                </td>
+                <td class="tr" (click)="$event.stopPropagation()">
+                  <div class="row-acts">
+                    <button class="act-btn act-edit" (click)="openEditPorteur(p)" title="Modifier">
+                      <span class="material-symbols-rounded">edit</span>
+                    </button>
+                    <button class="act-btn act-del" (click)="deletePorteur(p)" title="Supprimer">
+                      <span class="material-symbols-rounded">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="porteurs.length === 0">
+                <td colspan="5" class="empty-cell">
+                  <span class="material-symbols-rounded empty-icon">person_off</span>
+                  <p>Aucun porteur d'affaires configuré</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Clients associés au Porteur Sélectionné (Droite) -->
+      <div class="tbl-card clients-associated-card">
+        <div class="card-header">
+          <div *ngIf="selectedPorteur; else noSelectedPorteurHeader">
+            <h3>Clients de : <span class="highlight-name">{{ selectedPorteur.nom }}</span></h3>
+            <p class="subtitle">Définissez les commissions en % pour chaque client lié.</p>
+          </div>
+          <ng-template #noSelectedPorteurHeader>
+            <h3>Clients associés</h3>
+          </ng-template>
+          
+          <button class="btn-add btn-sm" *ngIf="selectedPorteur" (click)="openLinkClient()">
+            <span class="material-symbols-rounded">add</span>
+            Associer un client
+          </button>
+        </div>
+
+        <div class="associated-body" *ngIf="selectedPorteur; else selectPorteurMessage">
+          <div class="tbl-wrap">
+            <table class="associated-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th class="tc">Commission (%)</th>
+                  <th class="tr">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of selectedPorteur.clients">
+                  <td>
+                    <div class="client-cell">
+                      <span class="cl-nom">{{ c.nom }}</span>
+                    </div>
+                  </td>
+                  <td class="tc mono-sm bold-text">
+                    {{ c.commissionRate }}%
+                  </td>
+                  <td class="tr">
+                    <button class="act-btn act-del" (click)="unlinkClient(c)" title="Dissocier">
+                      <span class="material-symbols-rounded">link_off</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!selectedPorteur.clients || selectedPorteur.clients.length === 0">
+                  <td colspan="3" class="empty-cell">
+                    <span class="material-symbols-rounded empty-icon">link_off</span>
+                    <p>Aucun client associé à ce porteur.</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <ng-template #selectPorteurMessage>
+          <div class="select-porteur-prompt">
+            <span class="material-symbols-rounded prompt-icon">arrow_back</span>
+            <p>Sélectionnez un porteur d'affaires dans la liste pour gérer ses clients et ses commissions.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ONGLET RAPPORT & COMMISSIONS ==================== -->
+  <div class="tab-content" *ngIf="activeTab === 'rapport'">
+    
+    <!-- Filtres -->
+    <div class="tbl-card filters-card">
+      <div class="filters-grid">
+        <div class="fld">
+          <label>Sélectionner le Porteur</label>
+          <div class="select-wrapper">
+            <span class="material-symbols-rounded input-icon">handshake</span>
+            <select [(ngModel)]="rapportPorteurId" (change)="loadRapport()">
+              <option value="" disabled selected>-- Choisir un porteur --</option>
+              <option *ngFor="let p of porteurs" [value]="p.id">{{ p.nom }}</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="fld">
+          <label>Sélectionner le Mois</label>
+          <div class="input-icon">
+            <span class="material-symbols-rounded">calendar_month</span>
+            <input type="month" [(ngModel)]="rapportMois" (change)="loadRapport()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Totaux généraux (KPIs) en haut -->
+    <div class="stats-row" *ngIf="rapportPorteurId">
+      <div class="stat-card" style="--c: #2563EB">
+        <span class="stat-ico material-symbols-rounded">store</span>
+        <div>
+          <span class="stat-val">{{ totaux.totalRestaurant | number:'1.2-2':'fr-FR' }} DH</span>
+          <span class="stat-lbl">Total Restaurant</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c: #059669">
+        <span class="stat-ico material-symbols-rounded">account_balance_wallet</span>
+        <div>
+          <span class="stat-val">{{ totaux.totalPorteur | number:'1.2-2':'fr-FR' }} DH</span>
+          <span class="stat-lbl">Total Porteur</span>
+        </div>
+      </div>
+      <div class="stat-card" style="--c: #8B5CF6">
+        <span class="stat-ico material-symbols-rounded">payments</span>
+        <div>
+          <span class="stat-val highlight-val">{{ totaux.totalAvoir | number:'1.2-2':'fr-FR' }} DH</span>
+          <span class="stat-lbl">Total Commission / Avoir (Revenu Porteur)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table du Rapport -->
+    <div class="tbl-card rapport-card" *ngIf="rapportPorteurId">
+      <div class="card-header">
+        <h3>Détail des Bons de Livraison</h3>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="count-badge">{{ rapportLines.length }} ligne(s) de vente</span>
+          <button class="btn-add" style="background: linear-gradient(135deg, #DC2626, #B91C1C);" (click)="generateRapportPDF()" [disabled]="generatingPdf || rapportLines.length === 0">
+            <span class="material-symbols-rounded">picture_as_pdf</span>
+            {{ generatingPdf ? 'Génération...' : 'Générer PDF' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="tbl-wrap" *ngIf="!loadingRapport; else loadingSpinner">
+        <table class="rapport-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>N° BL</th>
+              <th>Client</th>
+              <th>Désignation</th>
+              <th class="tc">Qté (U)</th>
+              <th class="tr">Poids (kg)</th>
+              <th class="tr">Prix Resto</th>
+              <th class="tr">Montant Resto</th>
+              <th class="tr">Total Facture (Resto)</th>
+              <th class="tr">Prix Porteur</th>
+              <th class="tr">Total Porteur</th>
+              <th class="tr highlight-header">Avoir (Commission)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of pagedRapportLines" class="rapport-row">
+              <td class="mono-sm">{{ line.date | date:'dd/MM/yyyy' }}</td>
+              <td class="mono-sm font-semibold">{{ line.blNumero }}</td>
+              <td class="client-name-cell">{{ line.clientNom }}</td>
+              <td>{{ line.produitNom }}</td>
+              <td class="tc">{{ line.nbUnites }}</td>
+              <td class="tr mono-sm">{{ line.poids | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm">{{ line.prixRestaurant | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm">{{ line.montant | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm font-semibold">{{ line.totalFacture | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm italic-text">{{ line.prixPorteur | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm">{{ line.totalPorteur | number:'1.2-2':'fr-FR' }}</td>
+              <td class="tr mono-sm bold-text highlight-cell">
+                +{{ line.avoir | number:'1.2-2':'fr-FR' }} DH
+              </td>
+            </tr>
+            <tr *ngIf="rapportLines.length === 0">
+              <td colspan="12" class="empty-cell">
+                <span class="material-symbols-rounded empty-icon">receipt_long</span>
+                <p>Aucune transaction enregistrée pour ce porteur sur ce mois.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1 && !loadingRapport" class="pager" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #F1F5F9;">
+        <span class="pager-info" style="font-size: 0.8rem; color: #64748B;">
+          {{ (currentPage-1)*pageSize+1 }}–{{ currentPage*pageSize > rapportLines.length ? rapportLines.length : currentPage*pageSize }} sur {{ rapportLines.length }}
+        </span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <select [(ngModel)]="pageSize" (change)="currentPage = 1" style="padding: 6px 10px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 0.8rem;">
+            <option [value]="5">5 / page</option>
+            <option [value]="10">10 / page</option>
+            <option [value]="20">20 / page</option>
+          </select>
+          <button class="pg" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" style="width: 32px; height: 32px; border: 1px solid #E2E8F0; background: #fff; border-radius: 8px; cursor: pointer;">
+            <span class="material-symbols-rounded" style="font-size: 18px;">chevron_left</span>
+          </button>
+          <span style="font-size: 0.8rem; color: #64748B;">{{ currentPage }} / {{ totalPages }}</span>
+          <button class="pg" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" style="width: 32px; height: 32px; border: 1px solid #E2E8F0; background: #fff; border-radius: 8px; cursor: pointer;">
+            <span class="material-symbols-rounded" style="font-size: 18px;">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <ng-template #loadingSpinner>
+        <div class="spinner-container">
+          <span class="material-symbols-rounded spin-icon">sync</span>
+          <p>Chargement du rapport...</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Message d'invitation si pas de porteur sélectionné -->
+    <div class="tbl-card prompt-card" *ngIf="!rapportPorteurId">
+      <div class="select-porteur-prompt large-prompt">
+        <span class="material-symbols-rounded prompt-icon">handshake</span>
+        <h3>Sélectionnez un Porteur d'Affaires</h3>
+        <p>Veuillez choisir un porteur d'affaires et un mois ci-dessus pour consulter le rapport des ventes et le calcul des commissions.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal : Ajouter / Modifier un Porteur -->
+<div *ngIf="showPorteurModal" class="overlay" (click)="closePorteurModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editMode ? 'Modifier Porteur' : 'Nouveau Porteur d\'Affaires' }}</h3>
+      <button class="modal-close" (click)="closePorteurModal()">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fld full-width">
+          <label>Nom Complet <span class="req">*</span></label>
+          <div class="input-icon">
+            <span class="material-symbols-rounded">person</span>
+            <input type="text" [(ngModel)]="porteurForm.nom" placeholder="Ex: Jean Dupont">
+          </div>
+        </div>
+        <div class="fld">
+          <label>Téléphone</label>
+          <div class="input-icon">
+            <span class="material-symbols-rounded">phone</span>
+            <input type="text" [(ngModel)]="porteurForm.telephone" placeholder="Ex: 0612345678">
+          </div>
+        </div>
+        <div class="fld">
+          <label>Email</label>
+          <div class="input-icon">
+            <span class="material-symbols-rounded">mail</span>
+            <input type="email" [(ngModel)]="porteurForm.email" placeholder="Ex: jean.dupont@gmail.com">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sec" (click)="closePorteurModal()">Annuler</button>
+      <button class="btn-primary" (click)="savePorteur()">
+        <span class="material-symbols-rounded">{{ editMode ? 'save' : 'add' }}</span>
+        {{ editMode ? 'Enregistrer' : 'Créer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Associer un Client -->
+<div *ngIf="showClientLinkModal" class="overlay" (click)="closeLinkClientModal()">
+  <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Associer un Client</h3>
+      <button class="modal-close" (click)="closeLinkClientModal()">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns: 1fr;">
+        <div class="fld">
+          <label>Sélectionner le Client</label>
+          <div class="select-wrapper">
+            <span class="material-symbols-rounded input-icon">person</span>
+            <select [(ngModel)]="clientToLink">
+              <option value="" disabled selected>-- Choisir un client --</option>
+              <option *ngFor="let c of getAvailableClients()" [value]="c.id">{{ c.nom }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fld">
+          <label>Taux de Commission (%)</label>
+          <div class="input-icon">
+            <span class="material-symbols-rounded">percent</span>
+            <input type="number" [(ngModel)]="commissionRateToLink" min="0" max="100" step="0.5" placeholder="Ex: 5">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sec" (click)="closeLinkClientModal()">Annuler</button>
+      <button class="btn-primary" (click)="linkClient()">
+        <span class="material-symbols-rounded">link</span>
+        Lier
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal : Prévisualisation PDF (Rapport Commissions)      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div *ngIf="pdfPreviewUrl" class="overlay" (click)="closePdfPreview()" style="z-index: 2000;">
+  <div class="modal-box" style="max-width: 1100px; height: 92vh; display: flex; flex-direction: column;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>📄 Aperçu du Rapport</h3>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn-primary" (click)="downloadPdf()">
+          <span class="material-symbols-rounded">download</span> Télécharger
+        </button>
+        <button class="modal-close" (click)="closePdfPreview()">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body" style="flex: 1; padding: 0; background: #e5e7eb;">
+      <iframe [src]="pdfPreviewUrl" width="100%" height="100%" style="border: none;"></iframe>
+    </div>
+  </div>
+</div>

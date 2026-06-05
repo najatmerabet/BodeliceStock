@@ -79,6 +79,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/avoirs/avoirs.component').then(m => m.AvoirsComponent),
       },
+      {
+        path: 'porteurs-affaire',
+        loadComponent: () =>
+          import('./pages/porteurs-affaire/porteurs-affaire.component').then(m => m.PorteursAffaireComponent),
+      },
     ],
   },
   { path: '**', redirectTo: 'auth/login' },

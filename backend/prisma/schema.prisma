@@ -56,6 +56,9 @@ model Client {
   prixSpecifiques PrixClient[]
   files           Clientfile[]
   folders         ClientFolder[]
+  porteurId       Int?             @map("porteur_id")
+  commissionRate  Decimal?         @map("commission_rate") @db.Decimal(5, 2)
+  porteur         PorteurAffaire?  @relation(fields: [porteurId], references: [id], onDelete: SetNull)
 
   @@map("clients")
 }
@@ -269,4 +272,16 @@ model Clientfile {
   folder     ClientFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@map("client_files")
+}
+
+model PorteurAffaire {
+  id        Int      @id @default(autoincrement())
+  nom       String
+  telephone String?
+  email     String?
+  clients   Client[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("porteurs_affaire")
 }

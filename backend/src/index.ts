@@ -6,6 +6,7 @@ import authRouter from './routes/auth';
 import logs from './routes/logs';
 import produitsRouter from './routes/produits';
 import clientsRouter from './routes/clients';
+import porteursRouter from './routes/porteurs-affaire';
 import blRouter from './routes/bons-livraison';
 import facturesRouter from './routes/factures';
 import proformasRouter from './routes/proformas';
@@ -31,6 +32,7 @@ app.use(express.json());
 // Routes
 app.use('/api/produits', produitsRouter);
 app.use('/api/clients', clientsRouter);
+app.use('/api/porteurs-affaire', porteursRouter);
 app.use('/api/bons-livraison', blRouter);
 app.use('/api/factures', facturesRouter);
 app.use('/api/dashboard', statisticsRouter);

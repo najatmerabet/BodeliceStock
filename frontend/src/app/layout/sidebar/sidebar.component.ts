@@ -19,6 +19,7 @@ export class SidebarComponent {
     { icon: 'warehouse', label: 'Stock Usine', route: '/stock-usine' },
     { icon: 'add_circle', label: 'Production', route: '/production' },
     { icon: 'people', label: 'Clients', route: '/clients' },
+    { icon: 'handshake', label: "Porteurs d'Affaires", route: '/porteurs-affaire' },
     { icon: 'local_shipping', label: 'Bons de Livraison', route: '/bons-livraison' },
     { icon: 'description', label: 'Proformas', route: '/proformas' },
     { icon: 'receipt_long', label: 'Factures', route: '/factures' },

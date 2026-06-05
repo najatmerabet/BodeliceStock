@@ -10,6 +10,7 @@ router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextF
   try {
     const clients = await prisma.client.findMany({
       orderBy: { nom: 'asc' },
+      include: { porteur: true },
     });
     res.json(clients);
   } catch (error) {
@@ -25,6 +26,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
       include: {
         bonsLivraison: { orderBy: { date: 'desc' }, take: 10 },
         factures: { orderBy: { date: 'desc' }, take: 10 },
+        porteur: true,
       },
     });
     if (!client) {
@@ -54,9 +56,20 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       newRef = `CLI-${String(num + 1).padStart(3, '0')}`;
     }
 
-    const { nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
+    const { nom, ice, telephone, adresse, email, ville, codepostal, porteurId, commissionRate } = req.body;
     const client = await prisma.client.create({
-      data: { reference: newRef, nom, ice, telephone, adresse, email, ville, codepostal },
+      data: { 
+        reference: newRef, 
+        nom, 
+        ice, 
+        telephone, 
+        adresse, 
+        email, 
+        ville, 
+        codepostal,
+        porteurId: porteurId ? parseInt(String(porteurId)) : null,
+        commissionRate: (commissionRate !== undefined && commissionRate !== null) ? parseFloat(String(commissionRate)) : null,
+      },
     });
     try{
     await createLog({
@@ -77,13 +90,24 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 router.put('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("🟢 PUT client route hit", req.params.id, req.body);
-    const { reference, nom, ice, telephone, adresse, email, ville, codepostal } = req.body;
+    const { reference, nom, ice, telephone, adresse, email, ville, codepostal, porteurId, commissionRate } = req.body;
     const clientId = parseInt(String(req.params.id));
     console.log("🟢 Parsing client ID:", clientId);
     
     const client = await prisma.client.update({
       where: { id: clientId },
-      data: { reference: reference || null, nom, ice, telephone, adresse, email, ville, codepostal },
+      data: { 
+        reference: reference || null, 
+        nom, 
+        ice, 
+        telephone, 
+        adresse, 
+        email, 
+        ville, 
+        codepostal,
+        porteurId: porteurId ? parseInt(String(porteurId)) : null,
+        commissionRate: (commissionRate !== undefined && commissionRate !== null) ? parseFloat(String(commissionRate)) : null,
+      },
     });
     console.log("🟢 Client updated:", client.id);
     
