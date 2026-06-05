@@ -198,9 +198,9 @@ router.get('/:id/rapport', authMiddleware, async (req: Request, res: Response, n
         const nbUnites = Number(l.nbUnites || 0);
         const montant = Number(l.total || poids * prixRestaurant);
         
-        const prixPorteur = prixRestaurant * (1 - commissionRate / 100);
-        const totalLinePorteur = montant * (1 - commissionRate / 100);
-        const avoir = montant * (commissionRate / 100);
+        const prixPorteur = prixRestaurant - commissionRate;
+        const totalLinePorteur = poids * prixPorteur;
+        const avoir = poids * commissionRate;
 
         totalRestaurant += montant;
         totalPorteur += totalLinePorteur;
