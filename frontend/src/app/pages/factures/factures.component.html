@@ -16,6 +16,11 @@
           <p>Gérez et suivez vos factures clients</p>
         </div>
       </div>
+      <div class="page-hdr-right">
+        <button class="btn-hist" (click)="openHistoriqueModal()">
+          <span class="material-symbols-rounded">history_edu</span> + Facture Historique
+        </button>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -101,7 +106,11 @@
           </thead>
           <tbody>
             <tr *ngFor="let f of filteredFactures" class="fac-row" (click)="openDetail(f)">
-              <td><span class="num-tag">{{ f.numero }}</span></td>
+              <td>
+                <span class="num-tag">{{ f.numero }}</span>
+                <span *ngIf="f.type === 'HISTORIQUE'" class="badge-hist" title="Ancienne facture importée">HIST</span>
+                <div *ngIf="f.referenceExterne" style="font-size: 0.72rem; color: #94A3B8; margin-top: 2px;">Réf: {{ f.referenceExterne }}</div>
+              </td>
               <td>
                 <div class="client-cell">
                   <div class="cl-av">{{ (f.client?.nom || '?').charAt(0) }}</div>
@@ -149,8 +158,14 @@
         <button class="back-btn" (click)="backToList()"><span class="material-symbols-rounded">arrow_back</span></button>
         <div class="page-icon emerald"><span class="material-symbols-rounded">receipt</span></div>
         <div>
-          <h1>{{ selectedFacture.numero }}</h1>
-          <p>{{ selectedFacture.client?.nom }} · {{ selectedFacture.date | date:'dd MMMM yyyy' }}</p>
+          <h1 style="display: flex; align-items: center; gap: 8px;">
+            {{ selectedFacture.numero }}
+            <span *ngIf="selectedFacture.type === 'HISTORIQUE'" class="badge-hist">HISTORIQUE</span>
+          </h1>
+          <p>
+            {{ selectedFacture.client?.nom }} · {{ selectedFacture.date | date:'dd MMMM yyyy' }}
+            <span *ngIf="selectedFacture.referenceExterne"> · Réf: {{ selectedFacture.referenceExterne }}</span>
+          </p>
         </div>
       </div>
       <div class="page-hdr-right">
@@ -406,6 +421,147 @@
       </div>
       <div class="pdf-viewer-wrap">
         <iframe [src]="pdfPreviewUrl" class="pdf-iframe"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ HISTORIQUE MODAL ════ -->
+  <div *ngIf="showHistoriqueModal" class="overlay" (click)="closeHistoriqueModal()">
+    <div class="modal-box modal-box-lg" (click)="$event.stopPropagation()">
+      <div class="pdf-modal-hdr" style="padding: 0 0 16px 0; background: transparent; border-bottom: 1px solid #E2E8F0;">
+        <h3 style="display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
+          <span class="material-symbols-rounded" style="color: #d97706; font-size: 26px;">history_edu</span>
+          Ajouter une Facture Historique (Début d'Activité)
+        </h3>
+      </div>
+      
+      <p style="margin: 10px 0 20px; font-size: 0.82rem; color: #64748B;">
+        Saisissez une facture de votre ancien système pour pouvoir suivre les règlements clients. <strong>Cette opération n'a aucun impact sur les stocks actuels.</strong>
+      </p>
+
+      <div class="flex-row">
+        <div class="fld">
+          <label>Client *</label>
+          <select [(ngModel)]="historiqueForm.clientId">
+            <option [value]="0" disabled selected>Choisir un client...</option>
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Date de facturation *</label>
+          <input type="date" [(ngModel)]="historiqueForm.date" />
+        </div>
+        <div class="fld">
+          <label>Référence externe (ex: N° ancienne facture)</label>
+          <input type="text" [(ngModel)]="historiqueForm.referenceExterne" placeholder="ex: FAC-2024-0042" />
+        </div>
+      </div>
+
+      <div class="mode-toggle">
+        <label>
+          <input type="radio" name="histMode" [value]="false" [(ngModel)]="historiqueForm.useLignes" />
+          Montant global
+        </label>
+        <label>
+          <input type="radio" name="histMode" [value]="true" [(ngModel)]="historiqueForm.useLignes" />
+          Lignes détaillées (avec produits)
+        </label>
+      </div>
+
+      <!-- Saisie Simple / Montant global -->
+      <div *ngIf="!historiqueForm.useLignes" class="flex-row" style="margin-bottom: 18px;">
+        <div class="fld">
+          <label>Montant Total TTC (DH) *</label>
+          <input type="number" [(ngModel)]="historiqueForm.totalManuel" placeholder="0.00" min="0" />
+        </div>
+        <div class="fld">
+          <label>Montant déjà payé (DH)</label>
+          <input type="number" [(ngModel)]="historiqueForm.paye" placeholder="0.00" min="0" />
+        </div>
+      </div>
+
+      <!-- Saisie détaillée -->
+      <div *ngIf="historiqueForm.useLignes">
+        <div class="hist-table-wrap">
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Produit *</th>
+                <th style="width: 12%; text-align: center;">Colis</th>
+                <th style="width: 12%; text-align: center;">Poids/u</th>
+                <th style="width: 12%; text-align: right;">Qté (kg)</th>
+                <th style="width: 15%; text-align: right;">Prix/kg (DH)</th>
+                <th style="width: 10%; text-align: center;">TVA</th>
+                <th style="width: 14%; text-align: right;">Total TTC</th>
+                <th style="width: 5%;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of historiqueLignes; let i = index">
+                <td>
+                  <select [(ngModel)]="l.produitId" (change)="onProduitChange(l)" style="width:100%">
+                    <option [value]="0" disabled selected>Choisir...</option>
+                    <option *ngFor="let p of produits" [value]="p.id">{{ p.nom }} ({{ p.reference }})</option>
+                  </select>
+                </td>
+                <td style="text-align: center;">
+                  <input type="number" [(ngModel)]="l.nbUnites" (ngModelChange)="onLigneQtyUnitChange(l)" style="width: 60px; text-align: center;" placeholder="-" min="0" />
+                </td>
+                <td style="text-align: center;">
+                  <input type="number" [(ngModel)]="l.poidsUnitaire" (ngModelChange)="onLigneQtyUnitChange(l)" style="width: 60px; text-align: center;" placeholder="-" min="0" step="0.01" />
+                </td>
+                <td style="text-align: right;">
+                  <input type="number" [(ngModel)]="l.quantite" (ngModelChange)="calcLigneHistorique(l)" style="width: 70px; text-align: right;" placeholder="0" min="0" step="0.01" [disabled]="l.nbUnites !== null && l.poidsUnitaire !== null" />
+                </td>
+                <td style="text-align: right;">
+                  <input type="number" [(ngModel)]="l.prix" (ngModelChange)="calcLigneHistorique(l)" style="width: 80px; text-align: right;" placeholder="0.00" min="0" step="0.01" />
+                </td>
+                <td style="text-align: center;">
+                  <input type="number" [(ngModel)]="l.tva" (ngModelChange)="calcLigneHistorique(l)" style="width: 50px; text-align: center;" placeholder="0" min="0" />
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0F172A;">
+                  {{ (l.totalTTC || 0) | number:'1.2-2' }} DH
+                </td>
+                <td style="text-align: center;">
+                  <button class="btn-hist-del" (click)="removeLigneHistorique(i)">
+                    <span class="material-symbols-rounded">delete</span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="historiqueLignes.length === 0">
+                <td colspan="8" style="text-align: center; color: #94A3B8; padding: 20px 0;">
+                  Aucune ligne de produit. Cliquez sur le bouton ci-dessous pour en ajouter une.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <button class="btn-add-row" (click)="addLigneHistorique()">
+          <span class="material-symbols-rounded">add</span> Ajouter un produit
+        </button>
+
+        <div class="flex-row" style="margin-top: 14px; align-items: flex-end;">
+          <div class="fld" style="max-width: 250px;">
+            <label>Montant déjà payé (DH)</label>
+            <input type="number" [(ngModel)]="historiqueForm.paye" placeholder="0.00" min="0" />
+          </div>
+          <div style="flex: 1; display: flex; justify-content: flex-end; padding-bottom: 6px;">
+            <div class="totaux-summary">
+              <span>Total HT: <strong>{{ getTotalHTHistorique() | number:'1.2-2' }} DH</strong></span>
+              <span>Total TTC: <strong>{{ getTotalTTCHistorique() | number:'1.2-2' }} DH</strong></span>
+              <span>Reste: <strong style="color: #DC2626;">{{ (getTotalTTCHistorique() - historiqueForm.paye > 0 ? (getTotalTTCHistorique() - historiqueForm.paye) : 0) | number:'1.2-2' }} DH</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-acts" style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 20px;">
+        <button class="btn-sec" (click)="closeHistoriqueModal()" [disabled]="historiqueLoading">Annuler</button>
+        <button class="btn-pay" style="background: linear-gradient(135deg, #d97706, #f59e0b);" (click)="saveHistorique()" [disabled]="historiqueLoading || !historiqueForm.clientId">
+          <span class="material-symbols-rounded">{{ historiqueLoading ? 'hourglass_empty' : 'check_circle' }}</span>
+          {{ historiqueLoading ? 'Enregistrement...' : 'Enregistrer la facture' }}
+        </button>
       </div>
     </div>
   </div>

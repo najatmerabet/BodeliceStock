@@ -10,6 +10,25 @@ export interface Paiement {
   remarque?: string;
 }
 
+export interface LigneHistorique {
+  produitId: number;
+  quantite: number;
+  prix: number;
+  remise?: number;
+  tva?: number;
+  nbUnites?: number | null;
+  poidsUnitaire?: number | null;
+}
+
+export interface CreateHistoriquePayload {
+  clientId: number;
+  date?: string;
+  referenceExterne?: string;
+  paye?: number;
+  lignes?: LigneHistorique[];
+  totalManuel?: number;
+}
+
 export interface Facture {
   id: number;
   numero: string;
@@ -23,6 +42,8 @@ export interface Facture {
   paye: number;
   reste: number;
   statut: string;
+  type?: string;
+  referenceExterne?: string;
   bonsLivraison?: any[];
   avoirs?: any[];
   lignes?: any[];
@@ -59,6 +80,10 @@ export class FactureService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  createHistorique(payload: CreateHistoriquePayload): Observable<Facture> {
+    return this.http.post<Facture>(`${this.apiUrl}/historique`, payload);
   }
 
   getReleveClient(clientId: number, dateFrom?: string, dateTo?: string): Observable<any> {

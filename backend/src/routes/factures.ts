@@ -312,6 +312,188 @@ router.put('/:id/payer', authMiddleware, async (req: Request, res: Response, nex
   }
 });
 
+// POST /api/factures/historique — Créer une facture depuis un ancien système (sans impact stock)
+router.post('/historique', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { clientId, date, referenceExterne, paye, lignes, totalManuel } = req.body;
+
+    if (!clientId) {
+      res.status(400).json({ error: 'clientId est obligatoire' });
+      return;
+    }
+
+    const payeAmount   = Number(paye || 0);
+    const dateFacture  = date ? new Date(date) : new Date();
+    const numero       = await generateNumeroFacture();
+
+    // ── Fonction de calcul ligne (identique aux proformas) ──
+    function calcLigne(q: number, prix: number, remise: number, tva: number) {
+      const totalAvantRemise  = q * prix;
+      const montantRemise     = totalAvantRemise * (remise / 100);
+      const totalApresRemise  = totalAvantRemise - montantRemise;
+      const montantTVA        = totalApresRemise * (tva / 100);
+      const totalTTC          = totalApresRemise + montantTVA;
+      return { totalAvantRemise, totalApresRemise, totalTVA: montantTVA, totalTTC };
+    }
+
+    if (lignes && Array.isArray(lignes) && lignes.length > 0) {
+      // ── Mode AVEC lignes produits : on crée une FactureProforma interne ──
+      const lignesData = lignes.map((l: any) => {
+        const q     = Number(l.quantite || 0);
+        const prix  = Number(l.prix || 0);
+        const remise = Number(l.remise || 0);
+        const tva   = Number(l.tva || 0);
+        const calc  = calcLigne(q, prix, remise, tva);
+        return {
+          produitId:      Number(l.produitId),
+          quantite:       q,
+          prix,
+          remise,
+          tva,
+          nbUnites:       l.nbUnites      ? Number(l.nbUnites)      : null,
+          poidsUnitaire:  l.poidsUnitaire ? Number(l.poidsUnitaire) : null,
+          ...calc,
+        };
+      });
+
+      const totalHT     = lignesData.reduce((s, l) => s + l.totalAvantRemise, 0);
+      const totalRemise = lignesData.reduce((s, l) => s + (l.totalAvantRemise - l.totalApresRemise), 0);
+      const totalTVA    = lignesData.reduce((s, l) => s + l.totalTVA, 0);
+      const totalTTC    = lignesData.reduce((s, l) => s + l.totalTTC, 0);
+
+      // Générer numéro proforma
+      const allProformas = await prisma.factureProforma.findMany({ select: { numero: true }, orderBy: { numero: 'asc' } });
+      const usedNums = new Set(allProformas.map(p => parseInt(p.numero.replace('FP-', ''), 10)).filter(n => !isNaN(n)));
+      let numFP = 1;
+      while (usedNums.has(numFP)) numFP++;
+      const proformaNumero = `FP-${String(numFP).padStart(4, '0')}`;
+
+      const reste  = Math.max(0, totalTTC - payeAmount);
+      let statut   = 'impayée';
+      if (reste <= 0)         statut = 'payée';
+      else if (payeAmount > 0) statut = 'partielle';
+
+      const facture = await prisma.$transaction(async (tx) => {
+        // Créer la proforma interne (statut FACTURÉE directement, pas visible dans le flux normal)
+        const proforma = await tx.factureProforma.create({
+          data: {
+            numero:       proformaNumero,
+            clientId:     Number(clientId),
+            date:         dateFacture,
+            totalHT,
+            totalRemise,
+            totalTVA,
+            totalTTC,
+            statut:       'FACTURÉE',
+            lignes:       { create: lignesData },
+          },
+        });
+
+        // Créer la facture HISTORIQUE liée à la proforma
+        const newFacture = await tx.facture.create({
+          data: {
+            numero,
+            clientId:         Number(clientId),
+            date:             dateFacture,
+            type:             'HISTORIQUE',
+            referenceExterne: referenceExterne || null,
+            proformaId:       proforma.id,
+            totalHT,
+            totalRemise,
+            totalTVA,
+            total:            totalTTC,
+            paye:             payeAmount,
+            reste,
+            statut,
+          },
+          include: { client: true },
+        });
+
+        // Si déjà partiellement payé, enregistrer le paiement initial
+        if (payeAmount > 0) {
+          await tx.paiement.create({
+            data: {
+              factureId: newFacture.id,
+              montant:   payeAmount,
+              methode:   'ESPECE',
+              remarque:  'Solde initial (import historique)',
+              date:      dateFacture,
+            },
+          });
+        }
+
+        return newFacture;
+      });
+
+      await createLog({
+        action:      'CREATE',
+        entity:      'Facture',
+        entityId:    facture.id,
+        description: `Facture historique créée avec ${lignes.length} ligne(s): ${facture.numero}`,
+        userId:      (req as any).user?.userId,
+      });
+
+      res.status(201).json(facture);
+
+    } else {
+      // ── Mode SANS lignes : montant global uniquement ──
+      if (!totalManuel || Number(totalManuel) <= 0) {
+        res.status(400).json({ error: 'totalManuel est requis si aucune ligne de produit n\'est fournie' });
+        return;
+      }
+
+      const total  = Number(totalManuel);
+      const reste  = Math.max(0, total - payeAmount);
+      let statut   = 'impayée';
+      if (reste <= 0)         statut = 'payée';
+      else if (payeAmount > 0) statut = 'partielle';
+
+      const facture = await prisma.$transaction(async (tx) => {
+        const newFacture = await tx.facture.create({
+          data: {
+            numero,
+            clientId:         Number(clientId),
+            date:             dateFacture,
+            type:             'HISTORIQUE',
+            referenceExterne: referenceExterne || null,
+            total,
+            paye:             payeAmount,
+            reste,
+            statut,
+          },
+          include: { client: true },
+        });
+
+        if (payeAmount > 0) {
+          await tx.paiement.create({
+            data: {
+              factureId: newFacture.id,
+              montant:   payeAmount,
+              methode:   'ESPECE',
+              remarque:  'Solde initial (import historique)',
+              date:      dateFacture,
+            },
+          });
+        }
+
+        return newFacture;
+      });
+
+      await createLog({
+        action:      'CREATE',
+        entity:      'Facture',
+        entityId:    facture.id,
+        description: `Facture historique créée (montant global): ${facture.numero}`,
+        userId:      (req as any).user?.userId,
+      });
+
+      res.status(201).json(facture);
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/factures/:id — Supprimer une facture + remettre les BLs en "A FACTURER"
 router.delete('/:id', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

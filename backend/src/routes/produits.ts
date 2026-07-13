@@ -66,6 +66,34 @@ router.post('/import', authMiddleware, upload.single('file'), async (req: Reques
   } catch (error) { next(error); }
 });
 
+// POST /api/produits/reset-stock — Remettre à zéro tout le stock (opération irréversible)
+router.post('/reset-stock', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 1. Supprimer tous les mouvements de stock
+    await prisma.stockMouvement.deleteMany({});
+
+    // 2. Remettre quantite = 0 sur tous les produits
+    const result = await prisma.produit.updateMany({
+      data: { quantite: 0 },
+    });
+
+    await createLog({
+      action:      'UPDATE',
+      entity:      'Produit',
+      entityId:    0,
+      description: `Reset stock complet: ${result.count} produits remis à 0, historique mouvements supprimé`,
+      userId:      (req as any).user?.userId,
+    });
+
+    res.json({
+      count:   result.count,
+      message: `${result.count} produit(s) remis à zéro. Historique des mouvements supprimé.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/produits
 router.get('/', authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {

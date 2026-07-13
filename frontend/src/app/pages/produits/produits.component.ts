@@ -44,6 +44,11 @@ export class ProduitsComponent implements OnInit {
 
   unites = ['boule', 'sachet'];
 
+  // Reset Stock Modal
+  showResetModal = false;
+  resetConfirmText = '';
+  resetting = false;
+
   // ── Prix Clients ──
   clients: any[] = [];
   prixClients: any[] = [];
@@ -385,5 +390,37 @@ export class ProduitsComponent implements OnInit {
         this.form.nom = `${match[1].trim()} ${kg}KG`;
       }
     }
+  }
+
+  openResetModal(): void {
+    this.showResetModal = true;
+    this.resetConfirmText = '';
+    this.resetting = false;
+    this.cdr.detectChanges();
+  }
+
+  closeResetModal(): void {
+    this.showResetModal = false;
+    this.cdr.detectChanges();
+  }
+
+  executeReset(): void {
+    if (this.resetConfirmText !== 'RESET') return;
+    
+    this.resetting = true;
+    this.produitService.resetStock().subscribe({
+      next: (res) => {
+        this.showMessage(`✅ ${res.message}`, 'success');
+        this.closeResetModal();
+        this.loadProduits();
+        this.resetting = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.showMessage(err.error?.error || 'Erreur lors de la remise à zéro', 'error');
+        this.resetting = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

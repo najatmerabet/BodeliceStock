@@ -7,6 +7,9 @@
     </div>
     <div class="header-actions">
       <input type="file" id="excelUpload" (change)="onFileSelected($event)" accept=".xlsx,.xls" style="display:none" />
+      <button class="btn btn-outline" style="border-color: #DC2626; color: #DC2626;" (click)="openResetModal()" [disabled]="loading">
+        <span class="material-symbols-rounded">restart_alt</span> Reset Stock
+      </button>
       <button class="btn btn-outline" (click)="triggerFileInput()" [disabled]="loading">
         <span class="material-symbols-rounded">upload_file</span> Importer
       </button>
@@ -311,6 +314,27 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Stock Modal -->
+  <div *ngIf="showResetModal" class="overlay" (click)="closeResetModal()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()">
+      <div class="del-icon" style="background: #FEE2E2; color: #DC2626; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;"><span class="material-symbols-rounded" style="font-size: 24px;">restart_alt</span></div>
+      <h3 style="text-align: center; margin-bottom: 8px;">Remise à Zéro des Stocks ?</h3>
+      <p class="del-text" style="text-align: center; font-size: 0.85rem; color: #475569; margin-bottom: 12px;">Cette opération est <strong>irréversible</strong>. Elle va :</p>
+      <ul style="text-align: left; font-size: 0.82rem; color: #64748B; margin: 0 0 16px 20px; line-height: 1.4;">
+        <li>Mettre les quantités de <strong>tous les produits</strong> à 0.</li>
+        <li><strong>Supprimer tout l'historique</strong> des mouvements de stock.</li>
+      </ul>
+      <p class="del-text" style="text-align: center; font-size: 0.8rem; color: #475569; margin-bottom: 8px;">Pour confirmer, veuillez saisir le mot <strong>RESET</strong> ci-dessous :</p>
+      <input type="text" [(ngModel)]="resetConfirmText" placeholder="RESET" style="width: 100%; padding: 10px 14px; border: 1px solid #E2E8F0; border-radius: 10px; font-family: inherit; font-size: 0.9rem; text-align: center; text-transform: uppercase; margin-bottom: 16px; outline: none;" />
+      <div class="m-foot m-foot-center" style="display: flex; gap: 8px; justify-content: center;">
+        <button class="btn btn-outline" (click)="closeResetModal()" [disabled]="resetting">Annuler</button>
+        <button class="btn btn-primary" style="background-color: #DC2626; border-color: #DC2626; color: white;" (click)="executeReset()" [disabled]="resetting || resetConfirmText !== 'RESET'">
+          {{ resetting ? 'Réinitialisation...' : 'Confirmer le Reset' }}
+        </button>
       </div>
     </div>
   </div>

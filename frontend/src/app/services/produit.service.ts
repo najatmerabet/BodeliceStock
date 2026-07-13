@@ -37,4 +37,8 @@ export class ProduitService {
   getMouvements(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/mouvements`);
   }
+
+  resetStock(): Observable<{ count: number; message: string }> {
+    return this.http.post<{ count: number; message: string }>(`${this.apiUrl}/reset-stock`, {});
+  }
 }

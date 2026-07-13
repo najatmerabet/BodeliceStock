@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FactureService, Facture } from '../../services/facture.service';
+import { ClientsService } from '../../services/clients.service';
+import { ProduitService } from '../../services/produit.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -41,8 +43,25 @@ export class FacturesComponent implements OnInit {
   pdfPreviewBlobUrl: string | null = null;
   pdfPreviewName = '';
 
+  // Facture Historique Modal
+  showHistoriqueModal = false;
+  clients: any[] = [];
+  produits: any[] = [];
+  historiqueLoading = false;
+  historiqueForm = {
+    clientId: 0,
+    date: '',
+    referenceExterne: '',
+    paye: 0,
+    totalManuel: 0,
+    useLignes: false
+  };
+  historiqueLignes: any[] = [];
+
   constructor(
     private factureService: FactureService,
+    private clientsService: ClientsService,
+    private produitService: ProduitService,
     private cdr: ChangeDetectorRef,
     private router: Router,
     private sanitizer: DomSanitizer
@@ -674,6 +693,153 @@ doc.setFontSize(nomFontSize);
       }
     });
     return Array.from(clients.values());
+  }
+
+  openHistoriqueModal(): void {
+    this.showHistoriqueModal = true;
+    this.historiqueForm = {
+      clientId: 0,
+      date: new Date().toISOString().substring(0, 10),
+      referenceExterne: '',
+      paye: 0,
+      totalManuel: 0,
+      useLignes: false
+    };
+    this.historiqueLignes = [];
+    
+    this.clientsService.getClients().subscribe(data => {
+      this.clients = data;
+      this.cdr.detectChanges();
+    });
+    this.produitService.getProduits().subscribe(data => {
+      this.produits = data;
+      this.cdr.detectChanges();
+    });
+  }
+
+  closeHistoriqueModal(): void {
+    this.showHistoriqueModal = false;
+    this.cdr.detectChanges();
+  }
+
+  addLigneHistorique(): void {
+    this.historiqueLignes.push({
+      produitId: 0,
+      quantite: 1,
+      prix: 0,
+      remise: 0,
+      tva: 0,
+      nbUnites: null,
+      poidsUnitaire: null,
+      totalTTC: 0
+    });
+    this.cdr.detectChanges();
+  }
+
+  removeLigneHistorique(index: number): void {
+    this.historiqueLignes.splice(index, 1);
+    this.cdr.detectChanges();
+  }
+
+  onProduitChange(ligne: any): void {
+    const prod = this.produits.find(p => p.id === Number(ligne.produitId));
+    if (prod) {
+      ligne.prix = Number(prod.prixUnitaire);
+      ligne.tva = Number(prod.tva || 0);
+      ligne.poidsUnitaire = Number(prod.poidsUnitaire || 1);
+      ligne.quantite = Number(ligne.nbUnites || 1) * Number(ligne.poidsUnitaire);
+    }
+    this.calcLigneHistorique(ligne);
+  }
+
+  onLigneQtyUnitChange(ligne: any): void {
+    if (ligne.nbUnites !== null && ligne.poidsUnitaire !== null) {
+      ligne.quantite = Number(ligne.nbUnites) * Number(ligne.poidsUnitaire);
+    }
+    this.calcLigneHistorique(ligne);
+  }
+
+  calcLigneHistorique(ligne: any): void {
+    const q = Number(ligne.quantite || 0);
+    const p = Number(ligne.prix || 0);
+    const rem = Number(ligne.remise || 0);
+    const tva = Number(ligne.tva || 0);
+    
+    const ht = q * p;
+    const netHt = ht - (ht * (rem / 100));
+    ligne.totalTTC = netHt + (netHt * (tva / 100));
+    this.cdr.detectChanges();
+  }
+
+  getTotalHTHistorique(): number {
+    return this.historiqueLignes.reduce((sum, l) => {
+      const q = Number(l.quantite || 0);
+      const p = Number(l.prix || 0);
+      return sum + (q * p);
+    }, 0);
+  }
+
+  getTotalTTCHistorique(): number {
+    return this.historiqueLignes.reduce((sum, l) => sum + (l.totalTTC || 0), 0);
+  }
+
+  saveHistorique(): void {
+    if (!this.historiqueForm.clientId) {
+      this.showMessage('Veuillez sélectionner un client', 'error');
+      return;
+    }
+    
+    this.historiqueLoading = true;
+    const payload: any = {
+      clientId: Number(this.historiqueForm.clientId),
+      date: this.historiqueForm.date || undefined,
+      referenceExterne: this.historiqueForm.referenceExterne || undefined,
+      paye: Number(this.historiqueForm.paye || 0)
+    };
+
+    if (this.historiqueForm.useLignes) {
+      if (this.historiqueLignes.length === 0) {
+        this.showMessage('Veuillez ajouter au moins une ligne de produit', 'error');
+        this.historiqueLoading = false;
+        return;
+      }
+      if (this.historiqueLignes.some(l => !l.produitId)) {
+        this.showMessage('Veuillez sélectionner un produit pour toutes les lignes', 'error');
+        this.historiqueLoading = false;
+        return;
+      }
+      payload.lignes = this.historiqueLignes.map(l => ({
+        produitId: Number(l.produitId),
+        quantite: Number(l.quantite),
+        prix: Number(l.prix),
+        remise: Number(l.remise || 0),
+        tva: Number(l.tva || 0),
+        nbUnites: l.nbUnites ? Number(l.nbUnites) : null,
+        poidsUnitaire: l.poidsUnitaire ? Number(l.poidsUnitaire) : null
+      }));
+    } else {
+      if (!this.historiqueForm.totalManuel || Number(this.historiqueForm.totalManuel) <= 0) {
+        this.showMessage('Veuillez spécifier un montant total valide', 'error');
+        this.historiqueLoading = false;
+        return;
+      }
+      payload.totalManuel = Number(this.historiqueForm.totalManuel);
+    }
+
+    this.factureService.createHistorique(payload).subscribe({
+      next: (fac) => {
+        this.showMessage('Facture historique créée avec succès !', 'success');
+        this.closeHistoriqueModal();
+        this.loadFactures();
+        this.historiqueLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.showMessage(err.error?.error || 'Erreur lors de la création de la facture historique', 'error');
+        this.historiqueLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private showMessage(msg: string, type: 'success' | 'error'): void {
